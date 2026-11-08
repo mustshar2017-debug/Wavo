@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8"><meta name="wavo-build" content="2026-11-08-tiktok-rail-v3"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta charset="utf-8"><meta name="wavo-build" content="2026-11-08-tiktok-rail-force-v4"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080b0e"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><title>WAVO – وافي العالمي</title>
 <style>
 :root{--bg:#080b0e;--panel:#151b20;--line:#ffffff20;--muted:#aeb8bd;--a:#55e6c1;--pink:#ff5278}
@@ -69,41 +69,41 @@
 *{font-family:"TikTok Sans","Inter","Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 button,input,textarea,select{font-family:inherit;font-kerning:normal}
 
-/* WAVO interaction rail: TikTok-style right-side inset and vertical stack */
+/* WAVO interaction rail FORCE v4 — TikTok-style right rail */
 .video-card{isolation:isolate}
-.actions{
- position:absolute;
- z-index:4;
- top:53%;
- bottom:auto;
- right:max(12px,calc(env(safe-area-inset-right) + 10px));
- left:auto;
- transform:translateY(-50%);
- display:flex;
- flex-direction:column;
- align-items:center;
- justify-content:center;
- gap:clamp(8px,1.5vh,13px);
- max-height:calc(100% - 28px);
+.video-card .actions{
+ position:absolute!important;
+ z-index:4!important;
+ top:52%!important;
+ bottom:auto!important;
+ right:clamp(10px,3.2vw,18px)!important;
+ left:auto!important;
+ transform:translateY(-50%)!important;
+ display:flex!important;
+ flex-direction:column!important;
+ align-items:center!important;
+ justify-content:center!important;
+ gap:clamp(8px,1.5vh,13px)!important;
+ max-height:calc(100% - 24px)!important;
 }
-.aw{min-width:46px;gap:3px}
-.act{width:46px;height:46px;font-size:23px;flex:0 0 auto}
-.actions .aw:first-child .act{width:50px;height:50px;font-size:28px}
-.count{font-size:11px;line-height:1.15}
-.vinfo{right:76px;left:14px;bottom:max(18px,env(safe-area-inset-bottom));}
+.video-card .actions .aw{min-width:46px!important;gap:3px!important}
+.video-card .actions .act{width:46px!important;height:46px!important;font-size:23px!important;flex:0 0 auto!important}
+.video-card .actions .aw:first-child .act{width:50px!important;height:50px!important;font-size:28px!important}
+.video-card .actions .count{font-size:11px!important;line-height:1.15!important}
+.video-card .vinfo{right:76px!important;left:14px!important;bottom:max(18px,env(safe-area-inset-bottom))!important}
 @media(max-height:620px){
- .actions{gap:5px}
- .act{width:38px;height:38px;font-size:19px}
- .actions .aw:first-child .act{width:43px;height:43px;font-size:24px}
- .aw{min-width:38px}
- .vinfo{bottom:12px}
+ .video-card .actions{gap:5px!important}
+ .video-card .actions .act{width:38px!important;height:38px!important;font-size:19px!important}
+ .video-card .actions .aw:first-child .act{width:43px!important;height:43px!important;font-size:24px!important}
+ .video-card .actions .aw{min-width:38px!important}
+ .video-card .vinfo{bottom:12px!important}
 }
 @media(max-width:360px){
- .actions{right:max(10px,calc(env(safe-area-inset-right) + 8px))}
- .act{width:42px;height:42px;font-size:21px}
- .actions .aw:first-child .act{width:46px;height:46px;font-size:25px}
- .aw{min-width:42px}
- .vinfo{right:68px;left:10px}
+ .video-card .actions{right:10px!important}
+ .video-card .actions .act{width:42px!important;height:42px!important;font-size:21px!important}
+ .video-card .actions .aw:first-child .act{width:46px!important;height:46px!important;font-size:25px!important}
+ .video-card .actions .aw{min-width:42px!important}
+ .video-card .vinfo{right:68px!important;left:10px!important}
 }
 </style></head>
 <body>
