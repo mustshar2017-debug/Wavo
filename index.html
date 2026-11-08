@@ -52,6 +52,15 @@
 .chat-compose{display:flex;gap:8px;align-items:flex-end;padding-top:9px;border-top:1px solid var(--line)}
 .chat-compose .field{flex:1;min-height:44px;max-height:110px;margin:0;resize:none}
 .chat-compose button{width:48px;height:46px;border:0;border-radius:12px;background:var(--a);color:#06100d;font-weight:bold;font-size:19px}
+
+/* WAVO notifications */
+.notif-badge{position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;padding:0 4px;border-radius:20px;background:#ff5278;color:white;font-size:10px;font-weight:900;display:none;place-items:center;border:2px solid #10151b}
+#notificationsNav{position:relative}
+.notif-list{display:flex;flex-direction:column;gap:8px;max-height:62vh;overflow:auto}
+.notif-row{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:13px;background:#0c1115;color:white;text-align:right;width:100%}
+.notif-row.unread{border-color:#55e6c177;background:#123027}
+.notif-icon{width:38px;height:38px;flex:0 0 38px;border-radius:50%;display:grid;place-items:center;background:#173b34;color:var(--a);font-size:19px}
+.notif-copy{flex:1;min-width:0;line-height:1.55;font-size:13px}.notif-date{font-size:10px;color:var(--muted);margin-top:4px}
 </style></head>
 <body>
 <header class="top"><div class="brand">WAVO<small data-t="tag">عالمك في فيديو واحد.</small></div><div class="tools"><button class="tool" id="aiOpen" aria-label="WAVO AI" title="WAVO AI">✦</button><button class="tool" id="lang" aria-label="Language">ع</button><button class="tool" id="refresh" aria-label="Refresh">↻</button></div></header>
@@ -60,6 +69,7 @@
 <nav class="nav">
 <button id="profileNav"><b>♙</b><span data-t="profile">حسابي</span></button>
 <button id="inboxNav"><b>✉</b><span data-t="inbox">صندوق الوارد</span></button>
+<button id="notificationsNav"><b>🔔</b><span>الإشعارات</span><i id="notificationBadge" class="notif-badge">0</i></button>
 <button id="uploadNav"><b class="plus">＋</b></button>
 <button id="friendsNav"><b>♧</b><span data-t="friends">الأصدقاء</span></button>
 <button id="homeNav" class="active"><b>⌂</b><span data-t="home">الرئيسية</span></button>
@@ -84,6 +94,8 @@
 <div class="modal" id="chatModal"><section class="sheet chat-sheet"><div class="sheethead"><div><h2 id="chatTitle">محادثة</h2><p id="chatSubtitle" class="hint" style="margin:4px 0 0">رسائل خاصة</p></div><button class="close" data-close="chatModal">×</button></div>
 <div id="chatMessages" class="chat-messages"><p class="hint">جاري تحميل الرسائل...</p></div>
 <div class="chat-compose"><textarea id="chatInput" class="field" rows="1" maxlength="2000" placeholder="اكتب رسالة..."></textarea><button id="chatSend" aria-label="إرسال الرسالة">➤</button></div><p id="chatStatus" class="status"></p></section></div>
+
+<div class="modal" id="notificationsModal"><section class="sheet"><div class="sheethead"><h2>الإشعارات</h2><button class="close" data-close="notificationsModal">×</button></div><div class="sheethead"><p class="hint" style="margin:0">آخر التنبيهات على حسابك في WAVO</p><button id="notificationsReadAll" class="secondary">قراءة الكل</button></div><div id="notificationsList" class="notif-list"><p class="hint">جاري تحميل الإشعارات...</p></div><p id="notificationsStatus" class="status"></p></section></div>
 <div class="modal" id="infoModal"><section class="sheet"><div class="sheethead"><h2 id="infoTitle">WAVO</h2><button class="close" data-close="infoModal">×</button></div><p id="infoText" class="hint"></p></section></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -262,6 +274,18 @@ function setupInboxRealtime(){
   if($("chatModal").classList.contains("show")&&activePeer===payload.new.sender_id)loadChat();
  }).subscribe();
 }
+
+/* WAVO notifications center */
+let notificationsChannel=null;
+function notificationIcon(type){return type==="follow"?"♧":type==="message"?"✉":type==="like"?"♥":type==="comment"?"💬":"🔔";}
+function notificationText(n){const actor=n.actor_name||"مستخدم WAVO";if(n.type==="follow")return actor+" بدأ بمتابعتك";if(n.type==="message")return "رسالة جديدة من "+actor;if(n.type==="like")return actor+" أعجب بفيديو لك";if(n.type==="comment")return actor+" علّق على فيديو لك";return n.message||"لديك إشعار جديد";}
+function updateNotificationBadge(count){const b=$("notificationBadge");if(!b)return;b.textContent=count>99?"99+":String(count);b.style.display=count>0?"grid":"none";}
+async function loadNotifications(){if(!user||!client){$("notificationsList").innerHTML='<p class="hint">سجّل الدخول لعرض إشعاراتك.</p>';updateNotificationBadge(0);return;}const box=$("notificationsList");box.innerHTML='<p class="hint">جاري تحميل الإشعارات...</p>';$("notificationsStatus").textContent="";try{const {data,error}=await client.from("wavo_notifications").select("id,actor_id,type,message,created_at,read_at").eq("recipient_id",user.id).order("created_at",{ascending:false}).limit(80);if(error)throw error;const rows=data||[];const actorIds=[...new Set(rows.map(x=>x.actor_id).filter(Boolean))];let profiles=[];if(actorIds.length){const p=await client.from("wavo_profiles").select("user_id,display_name").in("user_id",actorIds);if(p.error)throw p.error;profiles=p.data||[];}const names=new Map(profiles.map(p=>[p.user_id,p.display_name]));rows.forEach(n=>n.actor_name=names.get(n.actor_id)||"مستخدم WAVO");updateNotificationBadge(rows.filter(n=>!n.read_at).length);if(!rows.length){box.innerHTML='<p class="empty">لا توجد إشعارات حتى الآن.</p>';return;}box.innerHTML="";rows.forEach(n=>{const b=document.createElement("button");b.type="button";b.className="notif-row"+(n.read_at?"":" unread");const ic=document.createElement("span");ic.className="notif-icon";ic.textContent=notificationIcon(n.type);const body=document.createElement("span");body.className="notif-copy";const msg=document.createElement("span");msg.textContent=notificationText(n);const date=document.createElement("div");date.className="notif-date";date.textContent=shortTime(n.created_at);body.append(msg,date);b.append(ic,body);b.onclick=async()=>{if(!n.read_at){const {error}=await client.from("wavo_notifications").update({read_at:new Date().toISOString()}).eq("id",n.id).eq("recipient_id",user.id);if(error){$("notificationsStatus").textContent="تعذر تحديث حالة الإشعار: "+error.message;return;}n.read_at=new Date().toISOString();b.classList.remove("unread");updateNotificationBadge(Math.max(0,Number($("notificationBadge").textContent)||0)-1);}if(n.type==="message"){modal("notificationsModal",false);openInbox();}};box.append(b);});}catch(e){box.innerHTML='<p class="hint">تعذر تحميل الإشعارات: '+safeText(e.message||e)+'</p><p class="hint">نفّذ ملف supabase/wavo_notifications.sql في SQL Editor أولاً.</p>';}}
+async function openNotifications(){setNav("notificationsNav");modal("notificationsModal");await loadNotifications();}
+async function markAllNotificationsRead(){if(!user)return;const {error}=await client.from("wavo_notifications").update({read_at:new Date().toISOString()}).eq("recipient_id",user.id).is("read_at",null);if(error){$("notificationsStatus").textContent="تعذر تحديد الإشعارات كمقروءة: "+error.message;return;}await loadNotifications();}
+function setupNotificationsRealtime(){if(notificationsChannel){client.removeChannel(notificationsChannel);notificationsChannel=null;}if(!user)return;notificationsChannel=client.channel("wavo-notifications-"+user.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"wavo_notifications",filter:"recipient_id=eq."+user.id},()=>{loadNotifications();}).subscribe();loadNotifications();}
+$("notificationsNav").onclick=openNotifications;$("notificationsReadAll").onclick=markAllNotificationsRead;
+
 function setNav(id){document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));$(id)?.classList.add("active");}
 $("homeNav").onclick=()=>{filter="all";query="";setNav("homeNav");render();$("feed").scrollTo(0,0)};$("liveOpen").onclick=()=>showInfo("liveText");
 $("refresh").onclick=load;$("forYou").onclick=()=>{filter="all";render();};$("popular").onclick=()=>{filter="all";render();};$("following").onclick=()=>openFriends("following");$("friendsNav").onclick=()=>{setNav("friendsNav");openFriends("discover");};$("inboxNav").onclick=openInbox;
@@ -280,7 +304,7 @@ $("forgot").onclick=async()=>{const email=$("email").value.trim();if(!email){$("
 $("sendOtp").onclick=async()=>{const phone=$("phone").value.trim();if(!/^\+[1-9]\d{7,14}$/.test(phone)){$("authStatus").textContent="اكتب الرقم بالصيغة الدولية مثل +249...";return;}const {error}=await client.auth.signInWithOtp({phone});$("authStatus").textContent=error?error.message:"تم طلب رمز التحقق إذا كانت خدمة SMS مفعلة.";};
 $("verifyOtp").onclick=async()=>{const {data,error}=await client.auth.verifyOtp({phone:$("phone").value.trim(),token:$("otp").value.trim(),type:"sms"});if(error){$("authStatus").textContent=error.message;return;}user=data.user;updateAuth();$("authStatus").textContent="تم تسجيل الدخول.";};
 $("signOut").onclick=async()=>{await client.auth.signOut();user=null;updateAuth();$("authStatus").textContent="تم تسجيل الخروج.";};
-client.auth.onAuthStateChange((_e,s)=>{user=s?.user||null;if(user){syncWavoProfile(user);setupInboxRealtime();}else if(inboxChannel){client.removeChannel(inboxChannel);inboxChannel=null;}});
+client.auth.onAuthStateChange((_e,s)=>{user=s?.user||null;if(user){syncWavoProfile(user);setupInboxRealtime();setupNotificationsRealtime();}else{if(inboxChannel){client.removeChannel(inboxChannel);inboxChannel=null;}if(notificationsChannel){client.removeChannel(notificationsChannel);notificationsChannel=null;}updateNotificationBadge(0);}});
 let previewUrl=null;
 function choose(f){if(!f)return;if(!f.type.startsWith("video/")){$("uploadStatus").textContent=t("choose");return;}selected=f;$("fileName").textContent=f.name;$("preview").innerHTML="";$("uploadStatus").textContent="";}
 $("videoFile").onchange=e=>choose(e.target.files[0]);$("cameraFile").onchange=e=>choose(e.target.files[0]);
@@ -296,6 +320,6 @@ document.querySelectorAll("[data-ai-mode]").forEach(b=>b.onclick=()=>{$("aiMode"
 async function sendAi(){const message=$("aiInput").value.trim(),mode=$("aiMode").value;if(!message)return;if(message.length>2500){$("aiStatus").textContent="الرسالة طويلة جداً.";return;}const {data,error:authError}=await client.auth.getUser();if(authError||!data.user){$("aiStatus").textContent="يجب تسجيل الدخول أولاً من حسابي.";return;}addAiBubble(message,"me");$("aiInput").value="";$("aiSend").disabled=true;$("aiStatus").textContent="WAVO AI يفكر...";try{const {data:result,error}=await client.functions.invoke("wavo-ai",{body:{message,mode,language:lang,history:aiHistory.slice(-8)}});if(error)throw error;const answer=String(result?.reply||"لم يصل رد من خدمة الذكاء الاصطناعي.");addAiBubble(answer,"bot");aiHistory.push({role:"user",content:message},{role:"assistant",content:answer});$("aiStatus").textContent="";}catch(e){console.error("WAVO AI",e);$("aiStatus").textContent="تعذر الاتصال بالمساعد: "+(e.message||"تحقق من نشر وظيفة wavo-ai وإعداد مفتاح الخدمة.");}finally{$("aiSend").disabled=false;}}
 $("aiSend").onclick=sendAi;$("aiInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendAi();}});
 
-applyLang();client.auth.getUser().then(({data})=>{user=data?.user||null;if(user){syncWavoProfile(user);setupInboxRealtime();}});load();
+applyLang();client.auth.getUser().then(({data})=>{user=data?.user||null;if(user){syncWavoProfile(user);setupInboxRealtime();setupNotificationsRealtime();}});load();
 })();
 </script></body></html>
