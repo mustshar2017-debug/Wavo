@@ -34,7 +34,9 @@ on public.wavo_messages for update to authenticated
 using (auth.uid() = recipient_id)
 with check (auth.uid() = recipient_id);
 
-grant select, insert, update on public.wavo_messages to authenticated;
+revoke update on public.wavo_messages from authenticated;
+grant select, insert on public.wavo_messages to authenticated;
+grant update (read_at) on public.wavo_messages to authenticated;
 
 -- Enable Realtime for new-message notifications if it is not already enabled.
 do $$
