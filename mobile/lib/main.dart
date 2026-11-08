@@ -70,11 +70,26 @@ class _WavoHomeState extends State<WavoHome> {
   int _tab = 0;
   int _activeVideo = 0;
   String? _message;
+  Future<List<Map<String, dynamic>>>? _peopleFuture;
+  Future<List<Map<String, dynamic>>>? _inboxFuture;
+  final _friendSearch = TextEditingController();
+  final _chatInput = TextEditingController();
+  String? _chatPeerId;
+  String _chatPeerName = '';
 
   @override
   void initState() {
     super.initState();
     _loadVideos();
+    _refreshPeople();
+    _refreshInbox();
+  }
+
+  @override
+  void dispose() {
+    _friendSearch.dispose();
+    _chatInput.dispose();
+    super.dispose();
   }
 
   Future<void> _loadVideos() async {
@@ -308,6 +323,323 @@ class _WavoHomeState extends State<WavoHome> {
     );
   }
 
+  void _refreshPeople() {
+    _peopleFuture = _fetchPeople();
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchPeople() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return [];
+    final response = await supabase
+        .from('wavo_profiles')
+        .select('user_id,display_name,avatar_url')
+        .neq('user_id', user.id)
+        .order('updated_at', ascending: false)
+        .limit(80);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<void> _toggleFollow(String peerId, bool isFollowing) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      _showAuth();
+      return;
+    }
+    try {
+      if (isFollowing) {
+        await supabase.from('wavo_follows').delete()
+            .eq('follower_id', user.id).eq('following_id', peerId);
+      } else {
+        await supabase.from('wavo_follows').insert({
+          'follower_id': user.id,
+          'following_id': peerId,
+        });
+      }
+      if (mounted) setState(_refreshPeople);
+    } catch (e) {
+      _notice('تعذر تحديث المتابعة: $e');
+    }
+  }
+
+  Widget _buildFriends() {
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      return _simplePage(Icons.people_outline, 'الأصدقاء',
+          'سجّل الدخول لاكتشاف مستخدمي WAVO ومتابعتهم.');
+    }
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _peopleFuture ??= _fetchPeople(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: wavoAccent));
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('تعذر تحميل الأصدقاء: ${snapshot.error}'));
+        }
+        final people = snapshot.data ?? [];
+        final term = _friendSearch.text.trim().toLowerCase();
+        final filtered = people.where((p) =>
+          (p['display_name']?.toString().toLowerCase() ?? '').contains(term)
+        ).toList();
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: TextField(
+                controller: _friendSearch,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: 'ابحث عن مستخدمي WAVO',
+                  prefixIcon: const Icon(Icons.search, color: wavoAccent),
+                  filled: true, fillColor: wavoPanel,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+            ),
+            Expanded(
+              child: filtered.isEmpty
+                ? const Center(child: Text('لا يوجد مستخدمون مطابقون حالياً.'))
+                : ListView.builder(
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final person = filtered[index];
+                      final id = person['user_id'].toString();
+                      final name = (person['display_name'] ?? 'مستخدم WAVO').toString();
+                      return FutureBuilder<bool>(
+                        future: supabase.from('wavo_follows').select('follower_id')
+                            .eq('follower_id', user.id).eq('following_id', id)
+                            .maybeSingle().then((row) => row != null),
+                        builder: (context, followSnapshot) {
+                          final following = followSnapshot.data ?? false;
+                          return ListTile(
+                            leading: const CircleAvatar(
+                              backgroundColor: wavoPanel,
+                              child: Icon(Icons.person, color: wavoAccent),
+                            ),
+                            title: Text(name),
+                            subtitle: const Text('WAVO WORLD'),
+                            trailing: OutlinedButton(
+                              onPressed: followSnapshot.connectionState == ConnectionState.waiting
+                                  ? null : () => _toggleFollow(id, following),
+                              child: Text(following ? 'تتابعه' : 'متابعة'),
+                            ),
+                            onTap: () => _openChat(id, name),
+                          );
+                        },
+                      );
+                    },
+                  ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _refreshInbox() {
+    _inboxFuture = _fetchInbox();
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchInbox() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return [];
+    final response = await supabase.from('wavo_messages')
+        .select('id,sender_id,recipient_id,body,created_at,read_at')
+        .or('sender_id.eq.${user.id},recipient_id.eq.${user.id}')
+        .order('created_at', ascending: false)
+        .limit(100);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Widget _buildInbox() {
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      return _simplePage(Icons.mail_outline, 'صندوق الوارد',
+          'سجّل الدخول لاستخدام الرسائل الخاصة.');
+    }
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _inboxFuture ??= _fetchInbox(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: wavoAccent));
+        }
+        if (snapshot.hasError) {
+          return Center(child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Text('تعذر تحميل الرسائل: ${snapshot.error}', textAlign: TextAlign.center),
+          ));
+        }
+        final messages = snapshot.data ?? [];
+        if (messages.isEmpty) {
+          return const Center(child: Text('لا توجد رسائل بعد. افتح حساب صديق وابدأ محادثة.'));
+        }
+        final peerIds = <String>{};
+        for (final message in messages) {
+          peerIds.add(message['sender_id'] == user.id
+              ? message['recipient_id'].toString()
+              : message['sender_id'].toString());
+        }
+        return FutureBuilder<List<Map<String, dynamic>>>(
+          future: supabase.from('wavo_profiles')
+              .select('user_id,display_name').inFilter('user_id', peerIds.toList())
+              .then((rows) => List<Map<String, dynamic>>.from(rows)),
+          builder: (context, profilesSnapshot) {
+            final profiles = profilesSnapshot.data ?? [];
+            return ListView(
+              children: peerIds.map((peerId) {
+                final profile = profiles.where((p) => p['user_id'] == peerId).firstOrNull;
+                final name = (profile?['display_name'] ?? 'مستخدم WAVO').toString();
+                final last = messages.firstWhere((m) =>
+                  m['sender_id'] == peerId || m['recipient_id'] == peerId);
+                return ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: wavoPanel,
+                    child: Icon(Icons.person, color: wavoAccent),
+                  ),
+                  title: Text(name),
+                  subtitle: Text(last['body']?.toString() ?? '',
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                  trailing: const Icon(Icons.chevron_left, color: wavoAccent),
+                  onTap: () => _openChat(peerId, name),
+                );
+              }).toList(),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _openChat(String peerId, String peerName) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      _showAuth();
+      return;
+    }
+    _chatPeerId = peerId;
+    _chatPeerName = peerName;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: wavoPanel,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setChatState) {
+          Future<List<Map<String, dynamic>>> loadChat() async {
+            final rows = await supabase.from('wavo_messages')
+                .select('id,sender_id,recipient_id,body,created_at,read_at')
+                .or('and(sender_id.eq.${user.id},recipient_id.eq.$peerId),and(sender_id.eq.$peerId,recipient_id.eq.${user.id})')
+                .order('created_at', ascending: true)
+                .limit(200);
+            final messages = List<Map<String, dynamic>>.from(rows);
+            final unread = messages.where((m) =>
+              m['recipient_id'] == user.id && m['read_at'] == null
+            ).map((m) => m['id']).toList();
+            if (unread.isNotEmpty) {
+              await supabase.from('wavo_messages').update({
+                'read_at': DateTime.now().toUtc().toIso8601String(),
+              }).inFilter('id', unread);
+            }
+            return messages;
+          }
+
+          Future<void> send() async {
+            final body = _chatInput.text.trim();
+            if (body.isEmpty || body.length > 2000) return;
+            try {
+              await supabase.from('wavo_messages').insert({
+                'sender_id': user.id,
+                'recipient_id': peerId,
+                'body': body,
+              });
+              _chatInput.clear();
+              setChatState(() {});
+              if (mounted) setState(_refreshInbox);
+            } catch (e) {
+              _notice('تعذر إرسال الرسالة: $e');
+            }
+          }
+
+          return SizedBox(
+            height: MediaQuery.of(context).size.height * .78,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(children: [
+                    const Icon(Icons.chat_bubble_outline, color: wavoAccent),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(_chatPeerName,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18))),
+                    IconButton(onPressed: () => Navigator.pop(sheetContext),
+                        icon: const Icon(Icons.close)),
+                  ]),
+                ),
+                Expanded(
+                  child: FutureBuilder<List<Map<String, dynamic>>>(
+                    future: loadChat(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator(color: wavoAccent));
+                      }
+                      if (snapshot.hasError) return Center(child: Text('خطأ: ${snapshot.error}'));
+                      final rows = snapshot.data ?? [];
+                      return ListView.builder(
+                        reverse: false,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        itemCount: rows.length,
+                        itemBuilder: (context, index) {
+                          final row = rows[index];
+                          final mine = row['sender_id'] == user.id;
+                          return Align(
+                            alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              padding: const EdgeInsets.all(11),
+                              constraints: const BoxConstraints(maxWidth: 280),
+                              decoration: BoxDecoration(
+                                color: mine ? const Color(0xFF174C43) : wavoBg,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Text(row['body'].toString()),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Row(children: [
+                      Expanded(child: TextField(
+                        controller: _chatInput,
+                        maxLength: 2000,
+                        decoration: InputDecoration(
+                          hintText: 'اكتب رسالة...',
+                          counterText: '',
+                          filled: true, fillColor: wavoBg,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                      )),
+                      IconButton(
+                        onPressed: send,
+                        icon: const Icon(Icons.send, color: wavoAccent),
+                      ),
+                    ]),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+    _chatPeerId = null;
+    if (mounted) setState(_refreshInbox);
+  }
+
   Widget _simplePage(IconData icon, String title, String subtitle) {
     return Center(
       child: Padding(
@@ -402,9 +734,9 @@ class _WavoHomeState extends State<WavoHome> {
                   index: _tab,
                   children: [
                     _buildFeed(),
-                    _simplePage(Icons.people_outline, 'الأصدقاء', 'سيتم ربط الأصدقاء والمتابعة بحسابك في المرحلة التالية.'),
+                    _buildFriends(),
                     _simplePage(Icons.add_circle_outline, 'نشر فيديو', 'استخدم زر الإضافة أسفل الشاشة لاختيار فيديو من الاستديو.'),
-                    _simplePage(Icons.mail_outline, 'صندوق الوارد', 'سيتم ربط الرسائل والإشعارات في المرحلة التالية.'),
+                    _buildInbox(),
                     _buildProfile(),
                   ],
                 ),
