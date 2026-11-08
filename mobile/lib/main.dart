@@ -18,7 +18,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
     url: supabaseUrl,
-    anonKey: supabasePublishableKey,
+    publishableKey: supabasePublishableKey,
   );
   runApp(const WavoApp());
 }
@@ -862,6 +862,9 @@ class _WavoHomeState extends State<WavoHome> {
                           letterSpacing: 1.2,
                         )),
                     const Spacer(),
+                    if (_uploading)
+                      const SizedBox(width: 22, height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: wavoAccent)),
                     IconButton(
                       tooltip: 'WAVI AI',
                       onPressed: _showAi,
