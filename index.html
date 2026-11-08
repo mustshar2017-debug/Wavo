@@ -55,7 +55,10 @@
 
 /* WAVO notifications */
 .notif-badge{position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;padding:0 4px;border-radius:20px;background:#ff5278;color:white;font-size:10px;font-weight:900;display:none;place-items:center;border:2px solid #10151b}
-#notificationsNav{position:relative}
+#inboxNav{position:relative}
+.inbox-activity-btn{width:100%;display:flex;align-items:center;gap:10px;padding:13px 14px;margin:10px 0 13px;border:1px solid #55e6c155;border-radius:13px;background:linear-gradient(110deg,#173b34,#17232a);color:#fff;text-align:right}
+.inbox-activity-btn>span:first-child{font-size:21px}.inbox-activity-btn strong{font-size:14px;flex:1}.activity-arrow{font-size:24px;color:#55e6c1}
+.activity-badge{display:none;min-width:20px;height:20px;padding:0 5px;border-radius:20px;background:#ff5278;color:white;font-size:11px;font-style:normal;font-weight:900;place-items:center}
 .notif-list{display:flex;flex-direction:column;gap:8px;max-height:62vh;overflow:auto}
 .notif-row{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:13px;background:#0c1115;color:white;text-align:right;width:100%}
 .notif-row.unread{border-color:#55e6c177;background:#123027}
@@ -106,8 +109,7 @@ button,input,textarea,select{font-family:inherit;font-kerning:normal}
 <main class="feed" id="feed"><div class="empty">جاري تحميل فيديوهات WAVO...</div></main>
 <nav class="nav">
 <button id="profileNav"><b>♙</b><span data-t="profile">حسابي</span></button>
-<button id="inboxNav"><b>✉</b><span data-t="inbox">صندوق الوارد</span></button>
-<button id="notificationsNav"><b>🔔</b><span>الإشعارات</span><i id="notificationBadge" class="notif-badge">0</i></button>
+<button id="inboxNav"><b>✉</b><span data-t="inbox">صندوق الوارد</span><i id="notificationBadge" class="notif-badge">0</i></button>
 <button id="uploadNav"><b class="plus">＋</b></button>
 <button id="friendsNav"><b>♧</b><span data-t="friends">الأصدقاء</span></button>
 <button id="homeNav" class="active"><b>⌂</b><span data-t="home">الرئيسية</span></button>
@@ -125,6 +127,7 @@ button,input,textarea,select{font-family:inherit;font-kerning:normal}
 
 <div class="modal" id="inboxModal"><section class="sheet"><div class="sheethead"><h2>صندوق الوارد</h2><button class="close" data-close="inboxModal">×</button></div>
 <p class="hint">رسائلك الخاصة مع أصدقاء WAVO</p>
+<button id="openActivity" class="inbox-activity-btn" type="button"><span>🔔</span><strong>النشاط والإشعارات</strong><span class="activity-arrow">‹</span><i id="activityBadge" class="activity-badge">0</i></button>
 <div class="inbox-search"><input id="inboxSearch" class="field" maxlength="40" placeholder="ابحث عن مستخدم لبدء محادثة"><button id="inboxSearchBtn" class="secondary">بحث</button></div>
 <div id="inboxSearchResults" class="people-list"></div>
 <div class="sheethead" style="margin-top:12px"><h2 style="font-size:16px">المحادثات</h2><button id="inboxReload" class="secondary">تحديث ↻</button></div>
@@ -317,12 +320,12 @@ function setupInboxRealtime(){
 let notificationsChannel=null;
 function notificationIcon(type){return type==="follow"?"♧":type==="message"?"✉":type==="like"?"♥":type==="comment"?"💬":"🔔";}
 function notificationText(n){const actor=n.actor_name||"مستخدم WAVO";if(n.type==="follow")return actor+" بدأ بمتابعتك";if(n.type==="message")return "رسالة جديدة من "+actor;if(n.type==="like")return actor+" أعجب بفيديو لك";if(n.type==="comment")return actor+" علّق على فيديو لك";return n.message||"لديك إشعار جديد";}
-function updateNotificationBadge(count){const b=$("notificationBadge");if(!b)return;b.textContent=count>99?"99+":String(count);b.style.display=count>0?"grid":"none";}
+function updateNotificationBadge(count){const label=count>99?"99+":String(count);const b=$("notificationBadge"),a=$("activityBadge");[b,a].forEach(el=>{if(!el)return;el.textContent=label;el.style.display=count>0?"grid":"none";});}
 async function loadNotifications(){if(!user||!client){$("notificationsList").innerHTML='<p class="hint">سجّل الدخول لعرض إشعاراتك.</p>';updateNotificationBadge(0);return;}const box=$("notificationsList");box.innerHTML='<p class="hint">جاري تحميل الإشعارات...</p>';$("notificationsStatus").textContent="";try{const {data,error}=await client.from("wavo_notifications").select("id,actor_id,type,message,created_at,read_at").eq("recipient_id",user.id).order("created_at",{ascending:false}).limit(80);if(error)throw error;const rows=data||[];const actorIds=[...new Set(rows.map(x=>x.actor_id).filter(Boolean))];let profiles=[];if(actorIds.length){const p=await client.from("wavo_profiles").select("user_id,display_name").in("user_id",actorIds);if(p.error)throw p.error;profiles=p.data||[];}const names=new Map(profiles.map(p=>[p.user_id,p.display_name]));rows.forEach(n=>n.actor_name=names.get(n.actor_id)||"مستخدم WAVO");updateNotificationBadge(rows.filter(n=>!n.read_at).length);if(!rows.length){box.innerHTML='<p class="empty">لا توجد إشعارات حتى الآن.</p>';return;}box.innerHTML="";rows.forEach(n=>{const b=document.createElement("button");b.type="button";b.className="notif-row"+(n.read_at?"":" unread");const ic=document.createElement("span");ic.className="notif-icon";ic.textContent=notificationIcon(n.type);const body=document.createElement("span");body.className="notif-copy";const msg=document.createElement("span");msg.textContent=notificationText(n);const date=document.createElement("div");date.className="notif-date";date.textContent=shortTime(n.created_at);body.append(msg,date);b.append(ic,body);b.onclick=async()=>{if(!n.read_at){const {error}=await client.from("wavo_notifications").update({read_at:new Date().toISOString()}).eq("id",n.id).eq("recipient_id",user.id);if(error){$("notificationsStatus").textContent="تعذر تحديث حالة الإشعار: "+error.message;return;}n.read_at=new Date().toISOString();b.classList.remove("unread");updateNotificationBadge(Math.max(0,Number($("notificationBadge").textContent)||0)-1);}if(n.type==="message"){modal("notificationsModal",false);openInbox();}};box.append(b);});}catch(e){box.innerHTML='<p class="hint">تعذر تحميل الإشعارات: '+safeText(e.message||e)+'</p><p class="hint">نفّذ ملف supabase/wavo_notifications.sql في SQL Editor أولاً.</p>';}}
-async function openNotifications(){setNav("notificationsNav");modal("notificationsModal");await loadNotifications();}
+async function openNotifications(){setNav("inboxNav");modal("notificationsModal");await loadNotifications();}
 async function markAllNotificationsRead(){if(!user)return;const {error}=await client.from("wavo_notifications").update({read_at:new Date().toISOString()}).eq("recipient_id",user.id).is("read_at",null);if(error){$("notificationsStatus").textContent="تعذر تحديد الإشعارات كمقروءة: "+error.message;return;}await loadNotifications();}
 function setupNotificationsRealtime(){if(notificationsChannel){client.removeChannel(notificationsChannel);notificationsChannel=null;}if(!user)return;notificationsChannel=client.channel("wavo-notifications-"+user.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"wavo_notifications",filter:"recipient_id=eq."+user.id},()=>{loadNotifications();}).subscribe();loadNotifications();}
-$("notificationsNav").onclick=openNotifications;$("notificationsReadAll").onclick=markAllNotificationsRead;
+$("openActivity").onclick=openNotifications;$("notificationsReadAll").onclick=markAllNotificationsRead;
 
 function setNav(id){document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));$(id)?.classList.add("active");}
 $("homeNav").onclick=()=>{filter="all";query="";setNav("homeNav");render();$("feed").scrollTo(0,0)};$("liveOpen").onclick=()=>showInfo("liveText");
