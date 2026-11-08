@@ -31,6 +31,27 @@
 .ai-messages{max-height:42vh;overflow:auto;display:flex;flex-direction:column;gap:9px;padding:8px 2px}.ai-bubble{padding:11px 13px;border-radius:14px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;max-width:92%;font-size:14px}.ai-bubble.bot{background:#202b30;border:1px solid #55e6c133;align-self:flex-start}.ai-bubble.me{background:#17483e;align-self:flex-end}.ai-tools{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}.ai-tools button{border:1px solid #55e6c166;background:#55e6c111;color:var(--a);border-radius:20px;padding:8px 11px;font-size:12px}.ai-compose{display:flex;gap:8px;align-items:flex-end}.ai-compose textarea{flex:1;min-height:48px;max-height:120px;resize:vertical}.ai-compose button{width:54px;height:48px;border:0;border-radius:12px;background:var(--a);color:#06100d;font-size:20px;font-weight:bold}.ai-mode{width:100%;padding:10px;border:1px solid #414d55;border-radius:10px;background:#0c1115;color:#fff;margin:6px 0}.ai-status{min-height:20px;color:var(--a);font-size:12px}
 
 .people-search{display:flex;gap:8px;align-items:center}.people-list{display:flex;flex-direction:column;gap:9px;margin-top:12px}.person{display:flex;align-items:center;gap:10px;padding:11px;border:1px solid var(--line);border-radius:13px;background:#0c1115}.person-avatar{width:42px;height:42px;flex:0 0 42px;border-radius:50%;display:grid;place-items:center;background:#173b34;color:var(--a);font-weight:900}.person-main{flex:1;min-width:0}.person-name{font-weight:700;overflow-wrap:anywhere}.person-meta{font-size:11px;color:var(--muted);margin-top:4px}.follow-btn{border:0;border-radius:9px;padding:9px 12px;background:var(--a);color:#06100d;font-weight:700;white-space:nowrap}.follow-btn.following{background:#ffffff16;color:#fff;border:1px solid #ffffff35}.people-counts{display:flex;gap:18px;color:var(--muted);font-size:12px;padding:8px 2px}.people-counts strong{color:#fff}
+
+/* WAVO private inbox */
+.inbox-search{display:flex;gap:8px;margin:10px 0}
+.inbox-search .field{margin:0;min-width:0}
+.inbox-list{display:flex;flex-direction:column;gap:8px;max-height:58vh;overflow:auto}
+.inbox-row{display:flex;align-items:center;gap:11px;padding:11px;border:1px solid var(--line);border-radius:14px;background:#0c1115;color:#fff;text-align:right;width:100%}
+.inbox-avatar{width:46px;height:46px;flex:0 0 46px;border-radius:50%;display:grid;place-items:center;background:#173b34;color:var(--a);font-weight:900;font-size:18px}
+.inbox-main{flex:1;min-width:0}
+.inbox-topline{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.inbox-preview{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:5px}
+.inbox-time{font-size:10px;color:var(--muted);white-space:nowrap}
+.inbox-unread{min-width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--a);color:#06100d;font-size:11px;font-weight:bold}
+.chat-sheet{height:min(88dvh,760px);display:flex;flex-direction:column;overflow:hidden}
+.chat-messages{flex:1;overflow:auto;display:flex;flex-direction:column;gap:9px;padding:12px 2px;min-height:180px}
+.chat-bubble{max-width:82%;padding:10px 13px;border-radius:15px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}
+.chat-bubble.mine{align-self:flex-start;background:#17483e;border-bottom-right-radius:5px}
+.chat-bubble.theirs{align-self:flex-end;background:#202b30;border:1px solid #55e6c133;border-bottom-left-radius:5px}
+.chat-meta{font-size:10px;color:#b5c3c7;margin-top:4px;text-align:left}
+.chat-compose{display:flex;gap:8px;align-items:flex-end;padding-top:9px;border-top:1px solid var(--line)}
+.chat-compose .field{flex:1;min-height:44px;max-height:110px;margin:0;resize:none}
+.chat-compose button{width:48px;height:46px;border:0;border-radius:12px;background:var(--a);color:#06100d;font-weight:bold;font-size:19px}
 </style></head>
 <body>
 <header class="top"><div class="brand">WAVO<small data-t="tag">عالمك في فيديو واحد.</small></div><div class="tools"><button class="tool" id="aiOpen" aria-label="WAVO AI" title="WAVO AI">✦</button><button class="tool" id="lang" aria-label="Language">ع</button><button class="tool" id="refresh" aria-label="Refresh">↻</button></div></header>
@@ -53,6 +74,16 @@
 <div class="modal" id="authModal"><section class="sheet"><div class="sheethead"><h2>حساب WAVO</h2><button class="close" data-close="authModal">×</button></div><div id="signedIn" class="hidden"><p id="userInfo" class="hint"></p><button id="signOut" class="secondary">تسجيل الخروج</button></div><div id="authForm"><div class="tabs"><button id="emailMode" class="active">البريد الإلكتروني</button><button id="phoneMode">الهاتف</button></div><div id="emailFields"><input id="fullName" class="field" placeholder="الاسم الكامل (للحساب الجديد)"><input id="email" class="field" type="email" placeholder="البريد الإلكتروني"><input id="password" class="field" type="password" placeholder="كلمة المرور"><button id="loginSubmit" class="primary">تسجيل الدخول</button><button id="signupSubmit" class="secondary" style="width:100%;margin-top:8px">إنشاء حساب جديد</button><button id="forgot" class="secondary" style="width:100%;margin-top:8px">نسيت كلمة المرور؟</button></div><div id="phoneFields" class="hidden"><input id="phone" class="field" placeholder="+249..."><button id="sendOtp" class="primary">إرسال رمز التحقق</button><input id="otp" class="field" placeholder="رمز التحقق"><button id="verifyOtp" class="primary">تأكيد الرمز</button></div></div><p id="authStatus" class="status"></p></section></div>
 <div class="modal" id="aiModal"><section class="sheet"><div class="sheethead"><h2>✦ WAVO AI</h2><button class="close" data-close="aiModal">×</button></div><p class="hint">مساعدك الذكي لصناعة المحتوى والإجابة عن الأسئلة. يلزم تسجيل الدخول لاستخدامه.</p><div class="ai-tools"><button type="button" data-ai-mode="assistant">مساعد ذكي</button><button type="button" data-ai-mode="caption">وصف فيديو</button><button type="button" data-ai-mode="hashtags">هاشتاقات</button><button type="button" data-ai-mode="translate">ترجمة</button></div><select id="aiMode" class="ai-mode"><option value="assistant">مساعد WAVO</option><option value="caption">كتابة وصف للفيديو</option><option value="hashtags">اقتراح هاشتاقات</option><option value="translate">ترجمة النص</option></select><div id="aiMessages" class="ai-messages"><div class="ai-bubble bot">مرحباً بك! أنا مساعد WAVO الذكي. كيف أساعدك اليوم؟</div></div><div class="ai-compose"><textarea id="aiInput" class="field" maxlength="2500" placeholder="اكتب سؤالك أو النص هنا..."></textarea><button id="aiSend" type="button" aria-label="إرسال">➤</button></div><p id="aiStatus" class="ai-status"></p><p class="hint">قد تُرسل رسالتك إلى مزود خدمة الذكاء الاصطناعي لمعالجتها. لا ترسل كلمات مرور أو بيانات خاصة.</p></section></div>
 <div class="modal" id="friendsModal"><section class="sheet"><div class="sheethead"><h2 id="friendsTitle">الأصدقاء والمتابعة</h2><button class="close" data-close="friendsModal">×</button></div><p class="hint" id="friendsHint">ابحث عن مستخدمي WAVO وتابعهم.</p><div class="people-counts"><span>أتابع: <strong id="followingCount">0</strong></span><span>يتابعونني: <strong id="followersCount">0</strong></span></div><div class="people-search"><input id="peopleSearch" class="field" placeholder="ابحث عن مستخدم..." style="margin:0"><button id="peopleSearchBtn" class="secondary">بحث</button></div><div id="peopleList" class="people-list"><p class="hint">جاري التحميل...</p></div><p id="peopleStatus" class="status"></p></section></div>
+
+<div class="modal" id="inboxModal"><section class="sheet"><div class="sheethead"><h2>صندوق الوارد</h2><button class="close" data-close="inboxModal">×</button></div>
+<p class="hint">رسائلك الخاصة مع أصدقاء WAVO</p>
+<div class="inbox-search"><input id="inboxSearch" class="field" maxlength="40" placeholder="ابحث عن مستخدم لبدء محادثة"><button id="inboxSearchBtn" class="secondary">بحث</button></div>
+<div id="inboxSearchResults" class="people-list"></div>
+<div class="sheethead" style="margin-top:12px"><h2 style="font-size:16px">المحادثات</h2><button id="inboxReload" class="secondary">تحديث ↻</button></div>
+<div id="inboxList" class="inbox-list"><p class="hint">جاري تحميل المحادثات...</p></div><p id="inboxStatus" class="status"></p></section></div>
+<div class="modal" id="chatModal"><section class="sheet chat-sheet"><div class="sheethead"><div><h2 id="chatTitle">محادثة</h2><p id="chatSubtitle" class="hint" style="margin:4px 0 0">رسائل خاصة</p></div><button class="close" data-close="chatModal">×</button></div>
+<div id="chatMessages" class="chat-messages"><p class="hint">جاري تحميل الرسائل...</p></div>
+<div class="chat-compose"><textarea id="chatInput" class="field" rows="1" maxlength="2000" placeholder="اكتب رسالة..."></textarea><button id="chatSend" aria-label="إرسال الرسالة">➤</button></div><p id="chatStatus" class="status"></p></section></div>
 <div class="modal" id="infoModal"><section class="sheet"><div class="sheethead"><h2 id="infoTitle">WAVO</h2><button class="close" data-close="infoModal">×</button></div><p id="infoText" class="hint"></p></section></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -134,9 +165,97 @@ async function refreshPeople(){
 $("peopleSearchBtn").onclick=refreshPeople;
 $("peopleSearch").addEventListener("keydown",e=>{if(e.key==="Enter")refreshPeople();});
 
+
+/* WAVO private messaging */
+let activePeer=null, activePeerName="", inboxChannel=null, chatBusy=false;
+function safeText(s){return String(s??"");}
+function shortTime(v){if(!v)return "";const d=new Date(v);return d.toLocaleString(lang==="ar"?"ar":lang==="fr"?"fr":"en",{hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"});}
+function inboxRequireLogin(){if(user)return true;$("inboxStatus").textContent="سجّل الدخول أولاً لاستخدام الرسائل الخاصة.";return false;}
+async function openInbox(){
+ setNav("inboxNav");modal("inboxModal");
+ if(!inboxRequireLogin()){$("inboxList").innerHTML='<p class="hint">سجّل الدخول من صفحة حسابي لعرض الرسائل وإرسالها.</p>';return;}
+ await loadInbox();
+}
+async function loadInbox(){
+ if(!user||!client)return;
+ const box=$("inboxList");box.innerHTML='<p class="hint">جاري تحميل المحادثات...</p>';$("inboxStatus").textContent="";
+ try{
+  const {data,error}=await client.from("wavo_messages").select("id,sender_id,recipient_id,body,created_at,read_at").or("sender_id.eq."+user.id+",recipient_id.eq."+user.id).order("created_at",{ascending:false}).limit(150);
+  if(error)throw error;
+  const latest=new Map();
+  (data||[]).forEach(m=>{const peer=m.sender_id===user.id?m.recipient_id:m.sender_id;if(!latest.has(peer))latest.set(peer,m);});
+  const ids=[...latest.keys()];
+  if(!ids.length){box.innerHTML='<p class="empty">لا توجد محادثات بعد. ابحث عن مستخدم WAVO بالأعلى لبدء محادثة.</p>';return;}
+  const {data:profiles,error:profileError}=await client.from("wavo_profiles").select("user_id,display_name,avatar_url").in("user_id",ids);
+  if(profileError)throw profileError;
+  const byId=new Map((profiles||[]).map(p=>[p.user_id,p]));
+  box.innerHTML="";
+  ids.forEach(peer=>{
+   const m=latest.get(peer),p=byId.get(peer)||{},name=p.display_name||"مستخدم WAVO";
+   const row=document.createElement("button");row.className="inbox-row";row.type="button";
+   const av=document.createElement("div");av.className="inbox-avatar";av.textContent=name.trim().slice(0,1)||"W";
+   const main=document.createElement("div");main.className="inbox-main";
+   const top=document.createElement("div");top.className="inbox-topline";
+   const nm=document.createElement("strong");nm.textContent=name;
+   const tm=document.createElement("span");tm.className="inbox-time";tm.textContent=shortTime(m.created_at);
+   top.append(nm,tm);
+   const preview=document.createElement("div");preview.className="inbox-preview";preview.textContent=(m.sender_id===user.id?"أنت: ":"")+m.body;
+   main.append(top,preview);row.append(av,main);
+   if(m.recipient_id===user.id&&!m.read_at){const dot=document.createElement("span");dot.className="inbox-unread";dot.textContent="•";row.append(dot);}
+   row.onclick=()=>openChat(peer,name);box.append(row);
+  });
+ }catch(e){box.innerHTML='<p class="hint">تعذر تحميل الرسائل: '+safeText(e.message||e)+'</p><p class="hint">تأكد من تنفيذ ملف supabase/wavo_messages.sql في SQL Editor.</p>';}
+}
+async function searchInboxUsers(){
+ if(!inboxRequireLogin())return;
+ const term=$("inboxSearch").value.trim(),box=$("inboxSearchResults");box.innerHTML="";
+ if(term.length<2){box.innerHTML='<p class="hint">اكتب حرفين على الأقل للبحث.</p>';return;}
+ try{
+  const {data,error}=await client.from("wavo_profiles").select("user_id,display_name").ilike("display_name","%"+term.replace(/[%_]/g,"")+"%").neq("user_id",user.id).limit(20);
+  if(error)throw error;
+  if(!data?.length){box.innerHTML='<p class="hint">لم يتم العثور على مستخدم بهذا الاسم.</p>';return;}
+  data.forEach(p=>{const b=document.createElement("button");b.className="inbox-row";b.type="button";const av=document.createElement("div");av.className="inbox-avatar";av.textContent=(p.display_name||"W").trim().slice(0,1);const nm=document.createElement("strong");nm.textContent=p.display_name||"مستخدم WAVO";const hint=document.createElement("div");hint.className="inbox-preview";hint.textContent="بدء محادثة خاصة";const main=document.createElement("div");main.className="inbox-main";main.append(nm,hint);b.append(av,main);b.onclick=()=>openChat(p.user_id,p.display_name||"مستخدم WAVO");box.append(b);});
+ }catch(e){box.innerHTML='<p class="hint">تعذر البحث: '+safeText(e.message||e)+'</p>';}
+}
+async function openChat(peer,name){
+ if(!user||!peer||peer===user.id)return;
+ activePeer=peer;activePeerName=name;$("chatTitle").textContent=name;$("chatSubtitle").textContent="محادثة خاصة";$("chatMessages").innerHTML='<p class="hint">جاري تحميل الرسائل...</p>';$("chatInput").value="";modal("chatModal");
+ await loadChat();
+}
+async function loadChat(){
+ if(!activePeer||!user)return;
+ const box=$("chatMessages");
+ try{
+  const filterExpr="and(sender_id.eq."+user.id+",recipient_id.eq."+activePeer+"),and(sender_id.eq."+activePeer+",recipient_id.eq."+user.id+")";
+  const {data,error}=await client.from("wavo_messages").select("id,sender_id,recipient_id,body,created_at,read_at").or(filterExpr).order("created_at",{ascending:true}).limit(300);
+  if(error)throw error;
+  box.innerHTML="";
+  if(!data?.length){const p=document.createElement("p");p.className="hint";p.textContent="ابدأ المحادثة بإرسال أول رسالة.";box.append(p);}
+  (data||[]).forEach(m=>{const wrap=document.createElement("div");wrap.className="chat-bubble "+(m.sender_id===user.id?"mine":"theirs");const body=document.createElement("div");body.textContent=m.body;const meta=document.createElement("div");meta.className="chat-meta";meta.textContent=shortTime(m.created_at)+(m.sender_id===user.id?(m.read_at?" · تمت القراءة":" · تم الإرسال"):"");wrap.append(body,meta);box.append(wrap);});
+  box.scrollTop=box.scrollHeight;
+  const unread=(data||[]).filter(m=>m.recipient_id===user.id&&!m.read_at).map(m=>m.id);
+  if(unread.length){const {error:readError}=await client.from("wavo_messages").update({read_at:new Date().toISOString()}).in("id",unread);if(readError)console.warn("Read receipt:",readError.message);}
+ }catch(e){box.innerHTML='<p class="hint">تعذر فتح المحادثة: '+safeText(e.message||e)+'</p>';}
+}
+async function sendChatMessage(){
+ const body=$("chatInput").value.trim();if(!body||!activePeer||!user||chatBusy)return;
+ chatBusy=true;$("chatSend").disabled=true;$("chatStatus").textContent="جاري الإرسال...";
+ try{
+  const {error}=await client.from("wavo_messages").insert({sender_id:user.id,recipient_id:activePeer,body});
+  if(error)throw error;
+  $("chatInput").value="";$("chatStatus").textContent="";await loadChat();await loadInbox();
+ }catch(e){$("chatStatus").textContent="تعذر إرسال الرسالة: "+safeText(e.message||e);}
+ finally{chatBusy=false;$("chatSend").disabled=false;}
+}
+$("inboxSearchBtn").onclick=searchInboxUsers;
+$("inboxSearch").addEventListener("keydown",e=>{if(e.key==="Enter")searchInboxUsers();});
+$("inboxReload").onclick=loadInbox;
+$("chatSend").onclick=sendChatMessage;
+$("chatInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChatMessage();}});
+
 function setNav(id){document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));$(id)?.classList.add("active");}
 $("homeNav").onclick=()=>{filter="all";query="";setNav("homeNav");render();$("feed").scrollTo(0,0)};$("liveOpen").onclick=()=>showInfo("liveText");
-$("refresh").onclick=load;$("forYou").onclick=()=>{filter="all";render();};$("popular").onclick=()=>{filter="all";render();};$("following").onclick=()=>openFriends("following");$("friendsNav").onclick=()=>{setNav("friendsNav");openFriends("discover");};$("inboxNav").onclick=()=>showInfo("inboxText");
+$("refresh").onclick=load;$("forYou").onclick=()=>{filter="all";render();};$("popular").onclick=()=>{filter="all";render();};$("following").onclick=()=>openFriends("following");$("friendsNav").onclick=()=>{setNav("friendsNav");openFriends("discover");};$("inboxNav").onclick=openInbox;
 function showInfo(key){$("infoTitle").textContent=lang==="ar"?"قريباً":lang==="en"?"Coming soon":"Bientôt";$("infoText").textContent=t(key);modal("infoModal");}
 $("uploadNav").onclick=()=>{setNav("uploadNav");$("uploadStatus").textContent="";modal("uploadModal");};
 $("searchOpen").onclick=()=>modal("searchModal");$("doSearch").onclick=()=>{query=$("searchInput").value.trim();filter="all";modal("searchModal",false);render();};
