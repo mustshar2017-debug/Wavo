@@ -193,7 +193,7 @@ class _WavoHomeState extends State<WavoHome> {
             } catch (e) {
               setSheetState(() => errorText = e.toString());
             } finally {
-              setSheetState(() => busy = false);
+              if (sheetContext.mounted) setSheetState(() => busy = false);
             }
           }
 
@@ -303,7 +303,7 @@ class _WavoHomeState extends State<WavoHome> {
       itemBuilder: (context, index) => WavoVideoCard(
         key: ValueKey(_videos[index].url),
         video: _videos[index],
-        active: index == _activeVideo,
+        active: index == _activeVideo && _tab == 0,
       ),
     );
   }
