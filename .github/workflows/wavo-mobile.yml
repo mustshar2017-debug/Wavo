@@ -28,6 +28,8 @@ jobs:
           cache: true
       - name: Generate native project folders
         run: flutter create . --org com.wavoworld --project-name wavo_mobile --platforms=android,ios
+      - name: Remove generated placeholder test
+        run: rm -f test/widget_test.dart
       - name: Install packages
         run: flutter pub get
       - name: Analyze
