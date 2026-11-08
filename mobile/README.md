@@ -13,7 +13,13 @@ The publishable key is intentionally a client-side key. Never put a Supabase ser
 ## Run locally
 
 1. Install Flutter stable and the Android/iOS toolchains.
-2. From this directory run:
+2. From this directory generate the native platform folders once:
+
+   ```bash
+   flutter create . --org com.wavoworld --project-name wavo_mobile --platforms=android,ios
+   ```
+
+3. Install dependencies and run:
 
    ```bash
    flutter pub get
