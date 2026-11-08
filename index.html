@@ -73,7 +73,7 @@ button,input,textarea,select{font-family:inherit;font-kerning:normal}
  z-index:4;
  top:50%;
  bottom:auto;
- right:max(9px,env(safe-area-inset-right));
+ right:max(3px,calc(env(safe-area-inset-right) + 2px));
  left:auto;
  transform:translateY(-50%);
  display:flex;
@@ -96,7 +96,7 @@ button,input,textarea,select{font-family:inherit;font-kerning:normal}
  .vinfo{bottom:12px}
 }
 @media(max-width:360px){
- .actions{right:max(5px,env(safe-area-inset-right))}
+ .actions{right:max(2px,calc(env(safe-area-inset-right) + 1px))}
  .vinfo{right:65px;left:10px}
 }
 </style></head>
