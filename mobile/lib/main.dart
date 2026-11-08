@@ -308,6 +308,25 @@ class _WavoHomeState extends State<WavoHome> {
     );
   }
 
+  Widget _simplePage(IconData icon, String title, String subtitle) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: wavoAccent, size: 58),
+            const SizedBox(height: 14),
+            Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(subtitle, textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70, height: 1.6)),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildProfile() {
     final user = supabase.auth.currentUser;
     return Center(
@@ -380,9 +399,12 @@ class _WavoHomeState extends State<WavoHome> {
               ),
               Expanded(
                 child: IndexedStack(
-                  index: _tab == 0 ? 0 : 1,
+                  index: _tab,
                   children: [
                     _buildFeed(),
+                    _simplePage(Icons.people_outline, 'الأصدقاء', 'سيتم ربط الأصدقاء والمتابعة بحسابك في المرحلة التالية.'),
+                    _simplePage(Icons.add_circle_outline, 'نشر فيديو', 'استخدم زر الإضافة أسفل الشاشة لاختيار فيديو من الاستديو.'),
+                    _simplePage(Icons.mail_outline, 'صندوق الوارد', 'سيتم ربط الرسائل والإشعارات في المرحلة التالية.'),
                     _buildProfile(),
                   ],
                 ),
@@ -395,16 +417,11 @@ class _WavoHomeState extends State<WavoHome> {
           indicatorColor: wavoAccent.withValues(alpha: .15),
           selectedIndex: _tab,
           onDestinationSelected: (value) {
-            if (value == 1) {
-              setState(() => _tab = 1);
-            } else if (value == 0) {
-              setState(() => _tab = 0);
-            } else if (value == 2) {
+            if (value == 2) {
               _pickAndUploadVideo();
-            } else if (value == 3) {
-              _notice('صندوق الوارد: سيتم ربطه في المرحلة التالية.');
-            } else if (value == 4) {
-              _showAuth();
+            } else {
+              setState(() => _tab = value);
+              if (value == 4 && supabase.auth.currentUser == null) _showAuth();
             }
           },
           destinations: const [
