@@ -201,7 +201,7 @@ class _WavoHomeState extends State<WavoHome> {
                 );
               }
               if (sheetContext.mounted) Navigator.pop(sheetContext);
-              if (mounted) setState(() {});
+              if (mounted) setState(() { _refreshPeople(); _refreshInbox(); });
               _notice(createAccount
                   ? 'تم إرسال طلب إنشاء الحساب. تحقق من بريدك إذا طُلب ذلك.'
                   : 'تم تسجيل الدخول.');
@@ -487,7 +487,8 @@ class _WavoHomeState extends State<WavoHome> {
             final profiles = profilesSnapshot.data ?? [];
             return ListView(
               children: peerIds.map((peerId) {
-                final profile = profiles.where((p) => p['user_id'] == peerId).firstOrNull;
+                Map<String, dynamic>? profile;
+                for (final item in profiles) { if (item['user_id'] == peerId) { profile = item; break; } }
                 final name = (profile?['display_name'] ?? 'مستخدم WAVO').toString();
                 final last = messages.firstWhere((m) =>
                   m['sender_id'] == peerId || m['recipient_id'] == peerId);
