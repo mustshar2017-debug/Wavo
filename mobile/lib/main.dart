@@ -74,6 +74,8 @@ class _WavoHomeState extends State<WavoHome> {
   Future<List<Map<String, dynamic>>>? _inboxFuture;
   final _friendSearch = TextEditingController();
   final _chatInput = TextEditingController();
+  final _aiInput = TextEditingController();
+  final List<Map<String, String>> _aiHistory = [];
   String? _chatPeerId;
   String _chatPeerName = '';
 
@@ -89,6 +91,7 @@ class _WavoHomeState extends State<WavoHome> {
   void dispose() {
     _friendSearch.dispose();
     _chatInput.dispose();
+    _aiInput.dispose();
     super.dispose();
   }
 
@@ -189,11 +192,19 @@ class _WavoHomeState extends State<WavoHome> {
             });
             try {
               if (createAccount) {
-                await supabase.auth.signUp(
+                final response = await supabase.auth.signUp(
                   email: email.text.trim(),
                   password: password.text,
                   data: {'full_name': name.text.trim()},
                 );
+                final newUser = response.user;
+                if (newUser != null) {
+                  await supabase.from('wavo_profiles').upsert({
+                    'user_id': newUser.id,
+                    'display_name': name.text.trim().isEmpty ? 'مستخدم WAVO' : name.text.trim(),
+                    'updated_at': DateTime.now().toUtc().toIso8601String(),
+                  }, onConflict: 'user_id');
+                }
               } else {
                 await supabase.auth.signInWithPassword(
                   email: email.text.trim(),
@@ -276,6 +287,140 @@ class _WavoHomeState extends State<WavoHome> {
           fillColor: wavoBg,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
+      ),
+    );
+  }
+
+  Future<void> _showAi() async {
+    if (supabase.auth.currentUser == null) {
+      _showAuth();
+      _notice('سجّل الدخول أولاً لاستخدام WAVI AI.');
+      return;
+    }
+    String mode = 'assistant';
+    bool sending = false;
+    String status = '';
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: wavoPanel,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setAiState) {
+          Future<void> send() async {
+            final message = _aiInput.text.trim();
+            if (message.isEmpty || sending) return;
+            if (message.length > 2500) {
+              setAiState(() => status = 'الرسالة طويلة جداً.');
+              return;
+            }
+            setAiState(() { sending = true; status = 'WAVI يفكر...'; });
+            final history = _aiHistory.take(8).map((item) => {
+              'role': item['role'], 'content': item['content'],
+            }).toList();
+            try {
+              final response = await supabase.functions.invoke(
+                'wavo-ai',
+                body: {
+                  'message': message,
+                  'mode': mode,
+                  'language': 'ar',
+                  'history': history,
+                },
+              );
+              final result = response.data;
+              final answer = result is Map
+                  ? (result['reply']?.toString() ?? 'لم يصل رد من المساعد.')
+                  : 'لم يصل رد من المساعد.';
+              _aiHistory.add({'role': 'user', 'content': message});
+              _aiHistory.add({'role': 'assistant', 'content': answer});
+              _aiInput.clear();
+              setAiState(() => status = '');
+            } catch (e) {
+              setAiState(() => status = 'تعذر الاتصال: $e');
+            } finally {
+              setAiState(() => sending = false);
+            }
+          }
+
+          return SizedBox(
+            height: MediaQuery.of(context).size.height * .82,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).viewInsets.bottom + 12),
+              child: Column(
+                children: [
+                  Row(children: [
+                    const Icon(Icons.auto_awesome, color: wavoAccent),
+                    const SizedBox(width: 10),
+                    const Expanded(child: Text('WAVI AI',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
+                    IconButton(onPressed: () => Navigator.pop(sheetContext),
+                        icon: const Icon(Icons.close)),
+                  ]),
+                  const Text('مساعدك الذكي لصناعة المحتوى والإجابة عن الأسئلة.',
+                      style: TextStyle(color: Colors.white70)),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: mode,
+                    dropdownColor: wavoPanel,
+                    decoration: const InputDecoration(labelText: 'نوع المساعدة'),
+                    items: const [
+                      DropdownMenuItem(value: 'assistant', child: Text('مساعد ذكي')),
+                      DropdownMenuItem(value: 'caption', child: Text('كتابة وصف فيديو')),
+                      DropdownMenuItem(value: 'hashtags', child: Text('اقتراح هاشتاقات')),
+                      DropdownMenuItem(value: 'translate', child: Text('ترجمة')),
+                    ],
+                    onChanged: (value) { if (value != null) setAiState(() => mode = value); },
+                  ),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: ListView(
+                      children: [
+                        const Text('مرحباً! أنا WAVI، كيف أساعدك؟',
+                            style: TextStyle(color: wavoAccent)),
+                        for (final item in _aiHistory)
+                          Align(
+                            alignment: item['role'] == 'user' ? Alignment.centerRight : Alignment.centerLeft,
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(vertical: 5),
+                              padding: const EdgeInsets.all(12),
+                              constraints: const BoxConstraints(maxWidth: 300),
+                              decoration: BoxDecoration(
+                                color: item['role'] == 'user' ? const Color(0xFF174C43) : wavoBg,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(item['content'] ?? ''),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  TextField(
+                    controller: _aiInput,
+                    maxLength: 2500,
+                    minLines: 1,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: 'اكتب رسالتك إلى WAVI...',
+                      counterText: '',
+                      filled: true, fillColor: wavoBg,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                      suffixIcon: IconButton(
+                        onPressed: sending ? null : send,
+                        icon: const Icon(Icons.send, color: wavoAccent),
+                      ),
+                    ),
+                    onSubmitted: (_) => send(),
+                  ),
+                  if (status.isNotEmpty)
+                    Padding(padding: const EdgeInsets.only(top: 6),
+                      child: Text(status, style: const TextStyle(color: wavoAccent))),
+                  const Text('لا ترسل كلمات مرور أو بيانات خاصة.',
+                      style: TextStyle(color: Colors.white54, fontSize: 11)),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -717,6 +862,11 @@ class _WavoHomeState extends State<WavoHome> {
                           letterSpacing: 1.2,
                         )),
                     const Spacer(),
+                    IconButton(
+                      tooltip: 'WAVI AI',
+                      onPressed: _showAi,
+                      icon: const Icon(Icons.auto_awesome, color: wavoAccent),
+                    ),
                     IconButton(
                       tooltip: 'تحديث الفيديوهات',
                       onPressed: _loadVideos,
