@@ -65,6 +65,40 @@
 /* WAVO unified TikTok-inspired typography */
 *{font-family:"TikTok Sans","Inter","Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 button,input,textarea,select{font-family:inherit;font-kerning:normal}
+
+/* WAVO interaction rail: centered, fully visible and clear of bottom navigation */
+.video-card{isolation:isolate}
+.actions{
+ position:absolute;
+ z-index:4;
+ top:50%;
+ bottom:auto;
+ right:max(9px,env(safe-area-inset-right));
+ left:auto;
+ transform:translateY(-50%);
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+ justify-content:center;
+ gap:clamp(7px,1.35vh,12px);
+ max-height:calc(100% - 28px);
+}
+.aw{min-width:42px;gap:2px}
+.act{width:42px;height:42px;font-size:21px;flex:0 0 auto}
+.actions .aw:first-child .act{width:49px;height:49px;font-size:28px}
+.count{font-size:10px;line-height:1.15}
+.vinfo{right:76px;left:14px;bottom:max(18px,env(safe-area-inset-bottom));}
+@media(max-height:620px){
+ .actions{gap:5px}
+ .act{width:36px;height:36px;font-size:19px}
+ .actions .aw:first-child .act{width:42px;height:42px;font-size:24px}
+ .aw{min-width:36px}
+ .vinfo{bottom:12px}
+}
+@media(max-width:360px){
+ .actions{right:max(5px,env(safe-area-inset-right))}
+ .vinfo{right:65px;left:10px}
+}
 </style></head>
 <body>
 <header class="top"><div class="brand">WAVO<small data-t="tag">عالمك في فيديو واحد.</small></div><div class="tools"><button class="tool" id="aiOpen" aria-label="WAVO AI" title="WAVO AI">✦</button><button class="tool" id="lang" aria-label="Language">ع</button><button class="tool" id="refresh" aria-label="Refresh">↻</button></div></header>
