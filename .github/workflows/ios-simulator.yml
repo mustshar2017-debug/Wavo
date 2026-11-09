@@ -1,0 +1,46 @@
+name: Build WAVO iOS Simulator App
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [mobile-app]
+    paths:
+      - 'www/**'
+      - 'package.json'
+      - 'capacitor.config.ts'
+      - '.github/workflows/ios-simulator.yml'
+
+jobs:
+  ios-simulator:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install
+      - name: Generate iOS project
+        run: npx cap add ios
+      - name: Sync WAVO app
+        run: npx cap sync ios
+      - name: Build simulator app
+        run: |
+          xcodebuild -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Package simulator app
+        run: |
+          cd build/Build/Products/Debug-iphonesimulator
+          zip -r "$GITHUB_WORKSPACE/WAVO-iOS-Simulator.zip" App.app
+      - name: Upload simulator app
+        uses: actions/upload-artifact@v4
+        with:
+          name: wavo-ios-simulator
+          path: WAVO-iOS-Simulator.zip
+          if-no-files-found: error
