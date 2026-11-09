@@ -44,3 +44,23 @@ on public.wavo_follows for delete to authenticated using (auth.uid() = follower_
 
 create index if not exists wavo_follows_following_idx on public.wavo_follows(following_id);
 create index if not exists wavo_follows_follower_idx on public.wavo_follows(follower_id);
+
+
+-- WAVO shared video comments
+create table if not exists public.wavo_comments (
+  id uuid primary key default gen_random_uuid(),
+  video_name text not null,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  display_name text not null default 'WAVO user',
+  body text not null check (char_length(body) between 1 and 300),
+  created_at timestamptz not null default now()
+);
+alter table public.wavo_comments enable row level security;
+drop policy if exists "WAVO comments readable by authenticated users" on public.wavo_comments;
+create policy "WAVO comments readable by authenticated users"
+on public.wavo_comments for select to authenticated using (true);
+drop policy if exists "WAVO users add comments as themselves" on public.wavo_comments;
+create policy "WAVO users add comments as themselves"
+on public.wavo_comments for insert to authenticated with check (auth.uid() = user_id);
+create index if not exists wavo_comments_video_created_idx
+on public.wavo_comments(video_name, created_at);
