@@ -1,0 +1,21 @@
+{
+  "name": "wavo-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "WAVO cross-platform mobile app",
+  "scripts": {
+    "cap:sync": "cap sync",
+    "android:add": "cap add android",
+    "ios:add": "cap add ios",
+    "android:open": "cap open android",
+    "ios:open": "cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3",
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/ios": "^7.4.3"
+  }
+}
