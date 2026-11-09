@@ -474,6 +474,44 @@ $("aiSend").onclick=sendAi;$("aiInput").addEventListener("keydown",e=>{if(e.key=
 applyLang();client.auth.getUser().then(({data})=>{user=data?.user||null;if(user){syncWavoProfile(user);setupInboxRealtime();setupNotificationsRealtime();}});load();
 })();
 
+/* WAVO EMERGENCY FEED WATCHDOG
+   Runs independently from the main app script. It exposes initialization errors
+   instead of leaving the visitor on an endless loading screen. */
+(function(){
+ "use strict";
+ var feed=document.getElementById("feed");
+ if(!feed)return;
+ var fatal="";
+ function showFailure(reason){
+   var current=feed.textContent||"";
+   if(!/تحميل فيديوهات WAVO|Loading WAVO videos|جاري تحميل/i.test(current))return;
+   var safe=String(reason||"تعذر بدء تشغيل المنصة").slice(0,900);
+   feed.innerHTML='<div class="empty" style="padding:24px;overflow-wrap:anywhere">'+
+     '<strong style="display:block;margin-bottom:12px">تعذر تشغيل واجهة WAVO</strong>'+
+     '<span>تم إيقاف شاشة التحميل المستمرة. السبب التقني:</span>'+
+     '<pre style="white-space:pre-wrap;direction:ltr;text-align:left;font-size:12px;margin:12px 0">'+
+     safe.replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];})+
+     '</pre><button type="button" id="wavoEmergencyReload" class="secondary">إعادة تشغيل WAVO ↻</button>'+
+     '<p style="font-size:12px;opacity:.75;margin-top:12px">إذا تكرر الخطأ، أرسل صورة هذه الرسالة للمستشارية.</p></div>';
+   var b=document.getElementById("wavoEmergencyReload");
+   if(b)b.onclick=function(){location.reload();};
+ }
+ window.addEventListener("error",function(e){
+   fatal="JavaScript: "+(e.message||"خطأ غير معروف")+
+     (e.filename?"\n"+e.filename:"")+(e.lineno?":"+e.lineno:"");
+   setTimeout(function(){showFailure(fatal);},100);
+ });
+ window.addEventListener("unhandledrejection",function(e){
+   fatal="Promise: "+(e.reason&&(e.reason.stack||e.reason.message)||String(e.reason||"رفض غير معروف"));
+   setTimeout(function(){showFailure(fatal);},100);
+ });
+ setTimeout(function(){
+   if(/تحميل فيديوهات WAVO|Loading WAVO videos|جاري تحميل/i.test(feed.textContent||"")){
+     showFailure(fatal||"لم تنتهِ عملية تهيئة التطبيق أو تحميل الفيديوهات خلال 15 ثانية. قد يكون هناك خطأ في بدء JavaScript أو الاتصال بالخادم.");
+   }
+ },15000);
+})(); 
+
 /* Show app welcome once on each browser until the visitor dismisses it */
 (function(){
  const welcome=document.getElementById("wavo-install-welcome");
