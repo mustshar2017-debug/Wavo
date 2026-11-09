@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="wavo-build" content="2026-11-09-social-comments-left-rail-v6"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080b0e"><meta name="application-name" content="Wavo"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><title>Wavo | وافي العالمي</title><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%23080b0e%22/%3E%3Ctext x=%2232%22 y=%2244%22 text-anchor=%22middle%22 font-family=%22Arial,sans-serif%22 font-size=%2240%22 font-weight=%22900%22 fill=%22%2355e6c1%22%3EW%3C/text%3E%3C/svg%3E">
+<style>
+:root{--bg:#080b0e;--panel:#151b20;--line:#ffffff20;--muted:#aeb8bd;--a:#55e6c1;--pink:#ff5278}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:var(--bg);color:#fff;font-family:Arial,Tahoma,sans-serif}body{overflow:hidden}button,input,textarea{font:inherit}button{cursor:pointer}
+.top{position:fixed;z-index:5;top:0;left:0;right:0;height:58px;padding:0 15px;display:flex;align-items:center;justify-content:space-between;background:#080b0edb;backdrop-filter:blur(12px)}
+.brand{font-size:25px;font-weight:900;letter-spacing:1px;color:var(--a)}.brand small{display:block;font-size:10px;color:#c5d0d3;letter-spacing:0;font-weight:400;margin-top:2px}
+.tools{display:flex;gap:8px}.tool{width:39px;height:39px;border:1px solid var(--line);border-radius:50%;background:#ffffff12;color:white}
+.feed{position:absolute;inset:106px 0 68px;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior-y:contain}
+.video-card{height:100%;min-height:100%;position:relative;scroll-snap-align:start;background:#050709;overflow:hidden}
+.video-card video{width:100%;height:100%;object-fit:contain;background:#050709}
+.video-card .pause-indicator{position:absolute;z-index:5;left:50%;top:50%;transform:translate(-50%,-50%) scale(.88);width:76px;height:76px;border-radius:50%;display:grid;place-items:center;background:#0009;border:1px solid #ffffff55;color:#fff;font-size:38px;font-weight:800;opacity:0;pointer-events:none;transition:opacity .16s,transform .16s;backdrop-filter:blur(3px)}
+.video-card .pause-indicator.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+
+.shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(0deg,#000c,transparent 43%,#0005)}
+.vinfo{position:absolute;right:15px;left:80px;bottom:24px;z-index:2;text-shadow:0 1px 4px #000}.author{font-weight:bold;margin-bottom:8px}.caption{font-size:14px;line-height:1.6;margin:0 0 8px;overflow-wrap:anywhere}.sound{font-size:12px;color:#ddd}
+.actions{position:absolute;z-index:3;left:12px;bottom:28px;display:flex;flex-direction:column;gap:15px;align-items:center}.aw{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:46px}.act{width:45px;height:45px;border:0;border-radius:50%;background:#10151bd9;color:#fff;font-size:22px;transition:transform .18s,filter .18s}.actions .aw:first-child .act{width:54px;height:54px;font-size:31px;background:#171117e8;text-shadow:0 0 12px #ff2d55;box-shadow:0 3px 16px #ff2d5540}.actions .aw:first-child .act.on{color:#ff2d55;transform:scale(1.06);filter:drop-shadow(0 0 7px #ff2d55)}.act.on{color:var(--pink)}.act.saved{color:#ffd45b}.count{font-size:11px;text-shadow:0 1px 3px #000}
+.empty{padding:40px 22px;text-align:center;color:var(--muted);line-height:1.9}
+.nav{position:fixed;z-index:8;bottom:0;left:0;right:0;height:68px;padding-bottom:env(safe-area-inset-bottom);background:#10151bf5;border-top:1px solid var(--line);display:flex;direction:ltr;justify-content:space-around;align-items:center}
+.nav button{border:0;background:none;color:#c3cbd0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;min-width:56px}.nav button b{font-size:22px;font-weight:400}.nav button.active{color:var(--a)}.plus{width:48px;height:34px;border-radius:10px;background:linear-gradient(110deg,#25f4ee 0%,#25f4ee 44%,#fe2c55 56%,#fe2c55 100%);color:#fff!important;font-size:29px!important;font-weight:800!important;display:grid;place-items:center;text-shadow:0 1px 3px #0008;box-shadow:3px 3px 0 #fe2c5570,-3px -3px 0 #25f4ee70}
+.modal{display:none;position:fixed;z-index:20;inset:0;background:#000b;align-items:flex-end;justify-content:center}.modal.show{display:flex}
+.sheet{width:100%;max-width:600px;max-height:91%;overflow:auto;background:#171e24;border:1px solid var(--line);border-radius:22px 22px 0 0;padding:18px 17px calc(24px + env(safe-area-inset-bottom))}
+.sheethead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.sheet h2{margin:0;color:var(--a);font-size:20px}.close{width:36px;height:36px;border:0;border-radius:50%;background:#ffffff18;color:white;font-size:20px}
+.field{width:100%;padding:13px;margin:7px 0;border:1px solid #414d55;border-radius:12px;background:#0c1115;color:white}.primary{width:100%;padding:14px;border:0;border-radius:12px;background:var(--a);color:#06100d;font-weight:bold;margin-top:10px}.auth-entry-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}.auth-entry-actions .primary,.auth-entry-actions .secondary{margin:0;min-height:48px}.secondary{padding:11px 14px;border:1px solid #58636a;border-radius:10px;background:#ffffff10;color:white}
+.hint,.status{font-size:12px;color:var(--muted);line-height:1.7;overflow-wrap:anywhere}.status{color:var(--a);min-height:22px}.hidden{display:none!important}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.choice{padding:19px 8px;text-align:center;border:1px solid #445159;border-radius:14px;background:#0c1115;cursor:pointer}.choice strong{display:block;margin-top:6px}.choice span{font-size:27px}
+.comment{padding:10px 0;border-bottom:1px solid var(--line);line-height:1.6}.stats{display:flex;justify-content:space-around;text-align:center;padding:15px 0;color:var(--muted)}.stats strong{display:block;color:white;font-size:19px}
+.tabs{position:fixed;z-index:6;top:58px;left:0;right:0;height:48px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 12px;background:#080b0ef2;backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}.tab-links{display:flex;align-items:center;justify-content:center;gap:clamp(10px,4vw,24px);flex:1;min-width:0}.tabs button{background:none;color:#c4cccf;border:0;padding:8px 5px;white-space:nowrap;font-size:14px}.tabs button.active{color:#fff;font-weight:800;border-bottom:2px solid #fff}.live-pill{display:flex;align-items:center;gap:5px;color:#fff!important;font-weight:900;font-size:12px!important;padding:7px 8px!important;border:1px solid #fe2c5570!important;border-radius:8px;background:#fe2c551a!important}.live-dot{width:7px;height:7px;border-radius:50%;background:#fe2c55;box-shadow:0 0 8px #fe2c55}.tab-search{width:36px;height:36px;flex:0 0 36px;border:1px solid var(--line)!important;border-radius:50%;font-size:24px!important;padding:0!important;color:#fff!important}.tabs button.active{color:#fff;font-weight:800;border-bottom:2px solid #fff}
+@media(min-width:700px){.feed{width:430px;left:calc(50% - 215px);right:auto;border-inline:1px solid var(--line)}.top{padding-left:max(15px,calc((100% - 430px)/2));padding-right:max(15px,calc((100% - 430px)/2))}.tabs{width:430px;left:calc(50% - 215px);right:auto}.nav{width:430px;left:calc(50% - 215px);right:auto}}
+
+.ai-messages{max-height:42vh;overflow:auto;display:flex;flex-direction:column;gap:9px;padding:8px 2px}.ai-bubble{padding:11px 13px;border-radius:14px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;max-width:92%;font-size:14px}.ai-bubble.bot{background:#202b30;border:1px solid #55e6c133;align-self:flex-start}.ai-bubble.me{background:#17483e;align-self:flex-end}.ai-tools{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}.ai-tools button{border:1px solid #55e6c166;background:#55e6c111;color:var(--a);border-radius:20px;padding:8px 11px;font-size:12px}.ai-compose{display:flex;gap:8px;align-items:flex-end}.ai-compose textarea{flex:1;min-height:48px;max-height:120px;resize:vertical}.ai-compose button{width:54px;height:48px;border:0;border-radius:12px;background:var(--a);color:#06100d;font-size:20px;font-weight:bold}.ai-mode{width:100%;padding:10px;border:1px solid #414d55;border-radius:10px;background:#0c1115;color:#fff;margin:6px 0}.ai-status{min-height:20px;color:var(--a);font-size:12px}
+
+.people-search{display:flex;gap:8px;align-items:center}.people-list{display:flex;flex-direction:column;gap:9px;margin-top:12px}.person{display:flex;align-items:center;gap:10px;padding:11px;border:1px solid var(--line);border-radius:13px;background:#0c1115}.person-avatar{width:42px;height:42px;flex:0 0 42px;border-radius:50%;display:grid;place-items:center;background:#173b34;color:var(--a);font-weight:900}.person-main{flex:1;min-width:0}.person-name{font-weight:700;overflow-wrap:anywhere}.person-meta{font-size:11px;color:var(--muted);margin-top:4px}.follow-btn{border:0;border-radius:9px;padding:9px 12px;background:var(--a);color:#06100d;font-weight:700;white-space:nowrap}.follow-btn.following{background:#ffffff16;color:#fff;border:1px solid #ffffff35}.people-counts{display:flex;gap:18px;color:var(--muted);font-size:12px;padding:8px 2px}.people-counts strong{color:#fff}
+
+/* WAVO private inbox */
+.inbox-search{display:flex;gap:8px;margin:10px 0}
+.inbox-search .field{margin:0;min-width:0}
+.inbox-list{display:flex;flex-direction:column;gap:8px;max-height:58vh;overflow:auto}
+.inbox-row{display:flex;align-items:center;gap:11px;padding:11px;border:1px solid var(--line);border-radius:14px;background:#0c1115;color:#fff;text-align:right;width:100%}
+.inbox-avatar{width:46px;height:46px;flex:0 0 46px;border-radius:50%;display:grid;place-items:center;background:#173b34;color:var(--a);font-weight:900;font-size:18px}
+.inbox-main{flex:1;min-width:0}
+.inbox-topline{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.inbox-preview{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:5px}
+.inbox-time{font-size:10px;color:var(--muted);white-space:nowrap}
+.inbox-unread{min-width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--a);color:#06100d;font-size:11px;font-weight:bold}
+.chat-sheet{height:min(88dvh,760px);display:flex;flex-direction:column;overflow:hidden}
+.chat-messages{flex:1;overflow:auto;display:flex;flex-direction:column;gap:9px;padding:12px 2px;min-height:180px}
+.chat-bubble{max-width:82%;padding:10px 13px;border-radius:15px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}
+.chat-bubble.mine{align-self:flex-start;background:#17483e;border-bottom-right-radius:5px}
+.chat-bubble.theirs{align-self:flex-end;background:#202b30;border:1px solid #55e6c133;border-bottom-left-radius:5px}
+.chat-meta{font-size:10px;color:#b5c3c7;margin-top:4px;text-align:left}
+.chat-compose{display:flex;gap:8px;align-items:flex-end;padding-top:9px;border-top:1px solid var(--line)}
+.chat-compose .field{flex:1;min-height:44px;max-height:110px;margin:0;resize:none}
+.chat-compose button{width:48px;height:46px;border:0;border-radius:12px;background:var(--a);color:#06100d;font-weight:bold;font-size:19px}
+
+/* WAVO notifications */
+.notif-badge{position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;padding:0 4px;border-radius:20px;background:#ff5278;color:white;font-size:10px;font-weight:900;display:none;place-items:center;border:2px solid #10151b}
+#inboxNav{position:relative}
+.inbox-activity-btn{width:100%;display:flex;align-items:center;gap:10px;padding:13px 14px;margin:10px 0 13px;border:1px solid #55e6c155;border-radius:13px;background:linear-gradient(110deg,#173b34,#17232a);color:#fff;text-align:right}
+.inbox-activity-btn>span:first-child{font-size:21px}.inbox-activity-btn strong{font-size:14px;flex:1}.activity-arrow{font-size:24px;color:#55e6c1}
+.activity-badge{display:none;min-width:20px;height:20px;padding:0 5px;border-radius:20px;background:#ff5278;color:white;font-size:11px;font-style:normal;font-weight:900;place-items:center}
+.notif-list{display:flex;flex-direction:column;gap:8px;max-height:62vh;overflow:auto}
+.notif-row{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:13px;background:#0c1115;color:white;text-align:right;width:100%}
+.notif-row.unread{border-color:#55e6c177;background:#123027}
+.notif-icon{width:38px;height:38px;flex:0 0 38px;border-radius:50%;display:grid;place-items:center;background:#173b34;color:var(--a);font-size:19px}
+.notif-copy{flex:1;min-width:0;line-height:1.55;font-size:13px}.notif-date{font-size:10px;color:var(--muted);margin-top:4px}
+\n/* WAVO TikTok-inspired account sheet */\n.profile-sheet{background:linear-gradient(180deg,#202a32 0%,#141a20 100%);border-radius:26px 26px 0 0;padding-top:10px}.profile-grabber{width:42px;height:4px;border-radius:9px;background:#82909a66;margin:0 auto 14px}.profile-sheethead{align-items:center;margin-bottom:16px}.profile-eyebrow{display:block;color:#55e6c1;font-size:10px;font-weight:800;letter-spacing:2px;margin-bottom:4px}.profile-sheethead h2{font-size:22px}.profile-hero{display:flex;align-items:center;gap:14px;padding:13px 4px 18px}.profile-avatar{width:66px;height:66px;flex:0 0 66px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(140deg,#25f4ee,#55e6c1 52%,#fe2c55);color:#07110f;font-size:30px;font-weight:900;box-shadow:0 0 0 4px #ffffff0c}.profile-identity{min-width:0;display:flex;flex-direction:column;gap:3px}.profile-identity strong{font-size:18px;color:#fff}.profile-identity span{font-size:12px;color:#aab7bd}.profile-identity .hint{margin:2px 0 0}.profile-stats{display:grid;grid-template-columns:repeat(3,1fr);padding:15px 0;margin:0 0 17px;border-top:1px solid #ffffff13;border-bottom:1px solid #ffffff13;text-align:center}.profile-stats>div{display:flex;flex-direction:column;gap:4px}.profile-stats strong{font-size:20px;color:#fff}.profile-stats span{font-size:12px;color:#aab7bd}.profile-edit{padding:14px;background:#ffffff08;border:1px solid #ffffff12;border-radius:16px}.profile-edit label{display:block;font-size:13px;font-weight:700;color:#e9f2f2;margin-bottom:5px}.profile-edit .field{margin:3px 0 8px;background:#0b1116}.profile-edit .secondary{width:100%;min-height:44px}.profile-auth-title{font-size:13px;font-weight:800;color:#eaf4f2;margin:18px 2px 0}.profile-sheet .auth-entry-actions{grid-template-columns:1fr 1fr;margin-top:9px}.profile-sheet .auth-entry-actions button{min-height:48px;border-radius:13px}.profile-auth-hint{text-align:center;margin:10px 0 0}\n
+/* WAVO unified TikTok-inspired typography */
+*{font-family:"TikTok Sans","Inter","Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button,input,textarea,select{font-family:inherit;font-kerning:normal}
+
+/* WAVO interaction rail FORCE v5 — left rail + follow avatar above like */
+.video-card .actions{
+ position:absolute!important;z-index:4!important;top:52%!important;bottom:auto!important;
+ left:clamp(10px,3.2vw,18px)!important;right:auto!important;transform:translateY(-50%)!important;
+ display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
+ gap:clamp(8px,1.5vh,13px)!important;max-height:calc(100% - 24px)!important;
+}
+.video-card .vinfo{left:76px!important;right:14px!important;bottom:max(18px,env(safe-area-inset-bottom))!important}
+.video-card .actions .follow-avatar-btn{width:48px;height:48px;border-radius:50%;border:2px solid #fff;background:linear-gradient(140deg,#25f4ee,#55e6c1 55%,#fe2c55);color:#07110f;font-size:24px;font-weight:900;display:grid;place-items:center;position:relative;box-shadow:0 2px 12px #0008;margin-bottom:1px}
+.video-card .actions .follow-avatar-btn:after{content:"+";position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:19px;height:19px;border-radius:50%;background:#fe2c55;color:#fff;border:2px solid #080b0e;font-size:15px;line-height:15px;text-align:center;font-weight:900}
+.video-card .actions .follow-avatar-btn.following:after{content:"✓";background:#55e6c1;color:#06100d}
+.video-card .actions .aw .act{width:46px!important;height:46px!important;font-size:23px!important}
+.video-card .actions .aw:first-child .act{width:50px!important;height:50px!important;font-size:28px!important}
+.video-card .actions .count{font-size:11px!important;line-height:1.15!important}
+@media(max-height:620px){.video-card .actions{gap:5px!important}.video-card .actions .aw .act{width:38px!important;height:38px!important;font-size:19px!important}.video-card .actions .aw:first-child .act{width:43px!important;height:43px!important;font-size:24px!important}.video-card .actions .follow-avatar-btn{width:40px;height:40px;font-size:20px}}
+@media(max-width:360px){.video-card .actions{left:10px!important}.video-card .vinfo{left:68px!important;right:10px!important}}
+/* WAVO app welcome / install screen */
+#wavo-install-welcome{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:22px;background:radial-gradient(ellipse at 50% 20%,#17483e 0%,#080b0e 58%,#050709 100%);direction:rtl}
+#wavo-install-welcome.show{display:flex}
+.wavo-install-card{width:min(100%,430px);padding:30px 22px 24px;border:1px solid #55e6c155;border-radius:28px;background:linear-gradient(160deg,#17252aee,#0c1115f5);box-shadow:0 24px 80px #0009;text-align:center}
+.wavo-install-logo{width:82px;height:82px;margin:0 auto 15px;border-radius:25px;display:grid;place-items:center;background:linear-gradient(135deg,#25f4ee,#55e6c1 55%,#fe2c55);color:#07110f;font-size:28px;font-weight:1000;letter-spacing:1px;box-shadow:0 10px 35px #25f4ee30}
+.wavo-install-card h1{margin:0 0 8px;color:#55e6c1;font-size:29px;font-weight:900}
+.wavo-install-card .wavo-tagline{margin:0 0 9px;color:#fff;font-size:17px;font-weight:700}
+.wavo-install-card .wavo-intro{margin:0 auto 22px;max-width:320px;color:#b8c6c9;font-size:13px;line-height:1.8}
+.wavo-install-actions{display:grid;gap:10px}
+.wavo-install-btn{width:100%;min-height:51px;border:0;border-radius:14px;padding:12px 15px;font-size:15px;font-weight:800}
+.wavo-install-btn.android{background:#55e6c1;color:#06100d}
+.wavo-install-btn.ios{background:#ffffff12;border:1px solid #ffffff26;color:#aeb8bd}
+.wavo-install-btn.continue{background:transparent;border:1px solid #ffffff35;color:#fff}
+.wavo-install-note{margin:14px 0 0;color:#829398;font-size:11px;line-height:1.7}
+.wavo-install-btn:disabled{opacity:.72;cursor:not-allowed}
+@media(min-width:700px){#wavo-install-welcome{backdrop-filter:blur(8px)}}
+
+
+/* WAVO public profile — full account page */
+.public-profile-sheet{height:100dvh;max-height:100dvh!important;width:100%;max-width:760px!important;border-radius:0!important;padding:0 0 env(safe-area-inset-bottom)!important;background:#fff!important;color:#111!important;overflow-y:auto}
+.public-profile-top{height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid #eee;position:sticky;top:0;background:#fff;z-index:3}
+.public-profile-top button{border:0;background:none;color:#111;font-size:25px}
+.public-profile-head{padding:22px 18px 14px;display:grid;grid-template-columns:126px 1fr;gap:16px;direction:rtl;align-items:center}
+.public-profile-avatar{width:126px;height:126px;border-radius:50%;object-fit:cover;background:#e8f7f3;border:1px solid #eee}
+.public-profile-name{font-size:clamp(21px,5vw,30px);font-weight:900;line-height:1.3;overflow-wrap:anywhere}
+.public-profile-handle{color:#888;font-size:14px;margin-top:5px}
+.public-profile-stats{display:flex;justify-content:space-around;text-align:center;padding:13px 10px;border-bottom:1px solid #eee;direction:rtl}
+.public-profile-stats strong{display:block;font-size:21px;color:#111}.public-profile-stats span{font-size:12px;color:#888}
+.public-profile-bio{padding:13px 18px;font-size:14px;line-height:1.7;min-height:42px}
+.public-profile-actions{display:flex;gap:9px;padding:0 16px 14px}
+.public-profile-actions button{flex:1;border:0;border-radius:8px;padding:11px;background:#ff2d55;color:white;font-weight:800}
+.public-profile-actions button.secondary-profile{background:#f0f0f0;color:#111}
+.public-profile-tabs{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid #eee;border-bottom:1px solid #eee;direction:rtl}
+.public-profile-tabs button{padding:13px 4px;border:0;background:#fff;color:#777;font-size:19px}
+.public-profile-tabs button.active{color:#111;border-bottom:2px solid #111}
+.public-profile-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;direction:rtl}
+.public-profile-grid .profile-tile{aspect-ratio:3/4;background:#f1f1f1;position:relative;overflow:hidden}
+.public-profile-grid video{width:100%;height:100%;object-fit:cover}
+.public-profile-grid .profile-empty{grid-column:1/-1;padding:45px 20px;text-align:center;color:#777;line-height:1.9}
+@media(min-width:700px){.public-profile-sheet{height:min(92dvh,900px);max-height:92dvh!important;border-radius:18px!important;margin:auto}.public-profile-modal{align-items:center!important}}
+</style></head>
+<body>
+
+<div id="wavo-install-welcome" role="dialog" aria-modal="true" aria-labelledby="wavo-install-title">
+ <section class="wavo-install-card">
+  <div class="wavo-install-logo" aria-hidden="true">WAVO</div>
+  <h1 id="wavo-install-title">حمّل تطبيق WAVO</h1>
+  <p class="wavo-tagline">عالمك في فيديو واحد.</p>
+  <p class="wavo-intro">استمتع بتجربة WAVO على هاتفك، وتابع الفيديوهات والأصدقاء من تطبيقنا.</p>
+  <div class="wavo-install-actions">
+   <button type="button" class="wavo-install-btn android" id="wavoAndroidDownload">🤖 الحصول على نسخة Android التجريبية</button>
+   <button type="button" class="wavo-install-btn ios" disabled> نسخة iPhone قيد التجهيز</button>
+   <button type="button" class="wavo-install-btn continue" id="wavoContinue">متابعة إلى الموقع</button>
+  </div>
+  <p class="wavo-install-note">نسخة Android التجريبية متاحة من صفحة إصدارات البناء على GitHub. نسخة iPhone لم تصبح جاهزة للتثبيت بعد.</p>
+ </section>
+</div>
+
+<header class="top"><div class="brand">WAVO<small data-t="tag">عالمك في فيديو واحد.</small></div><div class="tools"><button class="tool" id="aiOpen" aria-label="WAVO AI" title="WAVO AI">✦</button><button class="tool" id="lang" aria-label="Language">ع</button><button class="tool" id="refresh" aria-label="Refresh">↻</button></div></header>
+<div class="tabs"><button id="liveOpen" class="live-pill" aria-label="Live"><span class="live-dot"></span>LIVE</button><div class="tab-links"><button id="forYou" class="active" data-t="forYou">لك</button><button id="popular" data-t="community">المجتمع</button><button id="following" data-t="following">أتابع</button></div><button class="tab-search" id="searchOpen" aria-label="Search">⌕</button></div>
+<main class="feed" id="feed"><div class="empty">جاري تحميل فيديوهات WAVO...</div></main>
+<nav class="nav">
+<button id="profileNav"><b>♙</b><span data-t="profile">حسابي</span></button>
+<button id="inboxNav"><b>✉</b><span data-t="inbox">صندوق الوارد</span><i id="notificationBadge" class="notif-badge">0</i></button>
+<button id="uploadNav"><b class="plus">＋</b></button>
+<button id="friendsNav"><b>♧</b><span data-t="friends">الأصدقاء</span></button>
+<button id="homeNav" class="active"><b>⌂</b><span data-t="home">الرئيسية</span></button>
+</nav>
+<div class="modal" id="uploadModal"><section class="sheet"><div class="sheethead"><h2 data-t="newVideo">إنشاء فيديو</h2><button class="close" data-close="uploadModal">×</button></div>
+<div class="choices"><label class="choice" for="videoFile"><span>📁</span><strong data-t="gallery">الاستديو</strong></label><label class="choice" for="cameraFile"><span>📷</span><strong data-t="camera">الكاميرا</strong></label></div>
+<input class="hidden" type="file" id="videoFile" accept="video/*"><input class="hidden" type="file" id="cameraFile" accept="video/*" capture="environment">
+<p id="fileName" class="hint">لم يتم اختيار فيديو</p><textarea id="description" class="field" rows="3" maxlength="500" placeholder="اكتب وصف الفيديو..."></textarea><div id="preview"></div><button class="secondary" id="previewBtn" data-t="preview">معاينة الفيديو</button><button class="primary" id="uploadBtn" data-t="upload">نشر الفيديو</button><p id="uploadStatus" class="status"></p><p class="hint" data-t="uploadHint">الحد الأقصى 100 ميجابايت.</p></section></div>
+
+<div class="modal public-profile-modal" id="publicProfileModal"><section class="sheet public-profile-sheet">
+ <div class="public-profile-top"><button id="publicProfileBack" aria-label="رجوع">‹</button><strong>الملف الشخصي</strong><button data-close="publicProfileModal" aria-label="إغلاق">×</button></div>
+ <div class="public-profile-head"><img id="publicProfileAvatar" class="public-profile-avatar" alt="الصورة الشخصية"><div><div id="publicProfileName" class="public-profile-name">مستخدم WAVO</div><div id="publicProfileHandle" class="public-profile-handle">@wavo_user</div></div></div>
+ <div class="public-profile-stats"><div><strong id="publicProfilePosts">0</strong><span>فيديو</span></div><div><strong id="publicProfileFollowers">0</strong><span>متابعون</span></div><div><strong id="publicProfileFollowing">0</strong><span>يتابع</span></div><div><strong id="publicProfileLikes">0</strong><span>إعجابات</span></div></div>
+ <div id="publicProfileBio" class="public-profile-bio">عضو في WAVO — عالمك في فيديو واحد.</div>
+ <div class="public-profile-actions"><button id="publicProfileFollow">متابعة +</button><button id="publicProfileMessage" class="secondary-profile">رسالة</button></div>
+ <div class="public-profile-tabs"><button class="active" data-profile-tab="videos">▦</button><button data-profile-tab="likes">♡</button><button data-profile-tab="saved">▣</button></div>
+ <div id="publicProfileGrid" class="public-profile-grid"><div class="profile-empty">جاري تحميل الحساب...</div></div>
+</section></div>\n<div class="modal" id="commentsModal"><section class="sheet"><div class="sheethead"><h2 data-t="comments">التعليقات</h2><button class="close" data-close="commentsModal">×</button></div><div id="commentList"></div><input id="commentInput" class="field" maxlength="300" placeholder="اكتب تعليقك"><button id="sendComment" class="primary" data-t="send">إرسال</button><p class="hint" data-t="localOnly">التعليقات محفوظة محلياً على هذا الجهاز حالياً.</p></section></div>
+<div class="modal" id="searchModal"><section class="sheet"><div class="sheethead"><h2 data-t="search">البحث</h2><button class="close" data-close="searchModal">×</button></div><input id="searchInput" class="field" placeholder="ابحث في الفيديوهات"><button id="doSearch" class="primary" data-t="search">بحث</button></section></div>
+<div class="modal" id="profileModal"><section class="sheet profile-sheet"><div class="profile-grabber"></div><div class="sheethead profile-sheethead"><div><span class="profile-eyebrow">WAVO WORLD</span><h2 data-t="profile">حسابي</h2></div><button class="close" data-close="profileModal" aria-label="إغلاق">×</button></div><div class="profile-hero"><div class="profile-avatar" aria-hidden="true">W</div><div class="profile-identity"><strong id="profileDisplayName">مستخدم WAVO</strong><span id="profileHandle">@wavo_user</span><p id="profileState" class="hint">تستخدم المنصة كزائر</p></div></div><div class="profile-stats"><div><strong id="myPosts">0</strong><span data-t="videos">فيديوهاتي</span></div><div><strong id="myLikes">0</strong><span data-t="likes">إعجاباتي</span></div><div><strong id="mySaved">0</strong><span data-t="saved">المحفوظات</span></div></div><div class="profile-edit"><label for="displayName">اسم العرض</label><input id="displayName" class="field" maxlength="40" placeholder="اكتب اسمك في WAVO"><button id="saveName" class="secondary">حفظ الاسم</button></div><div class="profile-auth-title">حسابك على WAVO</div><div class="auth-entry-actions"><button id="openLogin" class="primary">تسجيل الدخول</button><button id="openSignup" class="secondary">إنشاء حساب جديد</button></div><p class="hint profile-auth-hint">الدخول بالبريد الإلكتروني متاح. تسجيل الهاتف يتطلب إعداد خدمة SMS في Supabase.</p></section></div>
+<div class="modal" id="authModal"><section class="sheet"><div class="sheethead"><h2>حساب WAVO</h2><button class="close" data-close="authModal">×</button></div><div id="signedIn" class="hidden"><p id="userInfo" class="hint"></p><button id="signOut" class="secondary">تسجيل الخروج</button></div><div id="authForm"><div class="tabs"><button id="emailMode" class="active">البريد الإلكتروني</button><button id="phoneMode">الهاتف</button></div><div id="emailFields"><input id="fullName" class="field" placeholder="الاسم الكامل (للحساب الجديد)"><input id="email" class="field" type="email" placeholder="البريد الإلكتروني"><input id="password" class="field" type="password" placeholder="كلمة المرور"><button id="loginSubmit" class="primary">تسجيل الدخول</button><button id="signupSubmit" class="secondary" style="width:100%;margin-top:8px">إنشاء حساب جديد</button><button id="forgot" class="secondary" style="width:100%;margin-top:8px">نسيت كلمة المرور؟</button></div><div id="phoneFields" class="hidden"><input id="phone" class="field" placeholder="+249..."><button id="sendOtp" class="primary">إرسال رمز التحقق</button><input id="otp" class="field" placeholder="رمز التحقق"><button id="verifyOtp" class="primary">تأكيد الرمز</button></div></div><p id="authStatus" class="status"></p></section></div>
+<div class="modal" id="aiModal"><section class="sheet"><div class="sheethead"><h2>✦ WAVO AI</h2><button class="close" data-close="aiModal">×</button></div><p class="hint">مساعدك الذكي لصناعة المحتوى والإجابة عن الأسئلة. يلزم تسجيل الدخول لاستخدامه.</p><div class="ai-tools"><button type="button" data-ai-mode="assistant">مساعد ذكي</button><button type="button" data-ai-mode="caption">وصف فيديو</button><button type="button" data-ai-mode="hashtags">هاشتاقات</button><button type="button" data-ai-mode="translate">ترجمة</button></div><select id="aiMode" class="ai-mode"><option value="assistant">مساعد WAVO</option><option value="caption">كتابة وصف للفيديو</option><option value="hashtags">اقتراح هاشتاقات</option><option value="translate">ترجمة النص</option></select><div id="aiMessages" class="ai-messages"><div class="ai-bubble bot">مرحباً بك! أنا مساعد WAVO الذكي. كيف أساعدك اليوم؟</div></div><div class="ai-compose"><textarea id="aiInput" class="field" maxlength="2500" placeholder="اكتب سؤالك أو النص هنا..."></textarea><button id="aiSend" type="button" aria-label="إرسال">➤</button></div><p id="aiStatus" class="ai-status"></p><p class="hint">قد تُرسل رسالتك إلى مزود خدمة الذكاء الاصطناعي لمعالجتها. لا ترسل كلمات مرور أو بيانات خاصة.</p></section></div>
+<div class="modal" id="friendsModal"><section class="sheet"><div class="sheethead"><h2 id="friendsTitle">الأصدقاء والمتابعة</h2><button class="close" data-close="friendsModal">×</button></div><p class="hint" id="friendsHint">ابحث عن مستخدمي WAVO وتابعهم.</p><div class="people-counts"><span>أتابع: <strong id="followingCount">0</strong></span><span>يتابعونني: <strong id="followersCount">0</strong></span></div><div class="people-search"><input id="peopleSearch" class="field" placeholder="ابحث عن مستخدم..." style="margin:0"><button id="peopleSearchBtn" class="secondary">بحث</button></div><div id="peopleList" class="people-list"><p class="hint">جاري التحميل...</p></div><p id="peopleStatus" class="status"></p></section></div>
+
+<div class="modal" id="inboxModal"><section class="sheet"><div class="sheethead"><h2>صندوق الوارد</h2><button class="close" data-close="inboxModal">×</button></div>
+<p class="hint">رسائلك الخاصة مع أصدقاء WAVO</p>
+<button id="openActivity" class="inbox-activity-btn" type="button"><span>🔔</span><strong>النشاط والإشعارات</strong><span class="activity-arrow">‹</span><i id="activityBadge" class="activity-badge">0</i></button>
+<div class="inbox-search"><input id="inboxSearch" class="field" maxlength="40" placeholder="ابحث عن مستخدم لبدء محادثة"><button id="inboxSearchBtn" class="secondary">بحث</button></div>
+<div id="inboxSearchResults" class="people-list"></div>
+<div class="sheethead" style="margin-top:12px"><h2 style="font-size:16px">المحادثات</h2><button id="inboxReload" class="secondary">تحديث ↻</button></div>
+<div id="inboxList" class="inbox-list"><p class="hint">جاري تحميل المحادثات...</p></div><p id="inboxStatus" class="status"></p></section></div>
+<div class="modal" id="chatModal"><section class="sheet chat-sheet"><div class="sheethead"><div><h2 id="chatTitle">محادثة</h2><p id="chatSubtitle" class="hint" style="margin:4px 0 0">رسائل خاصة</p></div><button class="close" data-close="chatModal">×</button></div>
+<div id="chatMessages" class="chat-messages"><p class="hint">جاري تحميل الرسائل...</p></div>
+<div class="chat-compose"><textarea id="chatInput" class="field" rows="1" maxlength="2000" placeholder="اكتب رسالة..."></textarea><button id="chatSend" aria-label="إرسال الرسالة">➤</button></div><p id="chatStatus" class="status"></p></section></div>
+
+<div class="modal" id="notificationsModal"><section class="sheet"><div class="sheethead"><h2>الإشعارات</h2><button class="close" data-close="notificationsModal">×</button></div><div class="sheethead"><p class="hint" style="margin:0">آخر التنبيهات على حسابك في WAVO</p><button id="notificationsReadAll" class="secondary">قراءة الكل</button></div><div id="notificationsList" class="notif-list"><p class="hint">جاري تحميل الإشعارات...</p></div><p id="notificationsStatus" class="status"></p></section></div>
+<div class="modal" id="infoModal"><section class="sheet"><div class="sheethead"><h2 id="infoTitle">WAVO</h2><button class="close" data-close="infoModal">×</button></div><p id="infoText" class="hint"></p></section></div>
+<script>
+/* WAVO V2 BOOT GUARD — keeps the interface diagnosable if startup fails */
+(function(){
+  var started=Date.now(), shown=false;
+  function showBootError(label,detail){
+    if(shown)return; shown=true;
+    var feed=document.getElementById("feed");
+    if(!feed)return;
+    var box=document.createElement("div");
+    box.className="empty";
+    box.style.cssText="padding:28px 18px;direction:rtl;text-align:center;line-height:1.9;color:#f3f5f7";
+    var title=document.createElement("strong"); title.textContent="تعذر تشغيل WAVO";
+    var msg=document.createElement("div"); msg.textContent=label;
+    var info=document.createElement("small"); info.style.cssText="display:block;direction:ltr;overflow-wrap:anywhere;color:#9aa6b2;margin-top:12px"; info.textContent=String(detail||"").slice(0,900);
+    var btn=document.createElement("button"); btn.textContent="إعادة المحاولة"; btn.style.cssText="margin-top:16px;padding:12px 22px;border:0;border-radius:12px;background:#55e6c1;color:#07110f;font-weight:700";
+    btn.onclick=function(){location.reload()};
+    box.append(title,msg,info,btn); feed.replaceChildren(box);
+  }
+  window.addEventListener("error",function(e){
+    showBootError("حدث خطأ JavaScript أثناء بدء التشغيل", (e.message||"Script error")+" | "+(e.filename||"")+" : "+(e.lineno||""));
+  });
+  window.addEventListener("unhandledrejection",function(e){
+    var r=e.reason; showBootError("فشل طلب أو تهيئة غير مكتملة",r&&(r.stack||r.message)||String(r||"Unknown rejection"));
+  });
+  setTimeout(function(){
+    var feed=document.getElementById("feed");
+    if(feed && /جاري تحميل فيديوهات WAVO|Loading WAVO videos/i.test(feed.textContent||"")){
+      showBootError("انتهى وقت بدء التشغيل دون اكتمال تحميل الفيديوهات","لم تبدأ واجهة WAVO أو لم يستجب Supabase خلال 18 ثانية. تحقق من اتصال الإنترنت ثم أعد المحاولة.");
+    }
+  },18000);
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(()=>{
+"use strict";
+const URL="https://jajaujilwhkroboyhenj.supabase.co",KEY="sb_publishable_9-FF377xk93I2f3XhWN-3w_UkxdOZLR",BUCKET="videos";
+const $=id=>document.getElementById(id), client=window.supabase?.createClient(URL,KEY);
+let user=null,files=[],selected=null,activeComment="",filter="all",query="",peopleMode="discover",lang=localStorage.getItem("wavo_lang")||"ar",authMode="email";
+const dict={
+ar:{tag:"عالمك في فيديو واحد.",forYou:"لك",community:"المجتمع",friends:"الأصدقاء",following:"أتابع",liveText:"البث المباشر قيد التجهيز، وسيظهر هنا عند اكتمال نظام البث.",profile:"حسابي",inbox:"صندوق الوارد",home:"الرئيسية",newVideo:"إنشاء فيديو",gallery:"الاستديو",camera:"الكاميرا",preview:"معاينة الفيديو",upload:"نشر الفيديو",uploadHint:"الحد الأقصى 100 ميجابايت. قد يعتمد وقت الرفع على سرعة الإنترنت.",comments:"التعليقات",send:"إرسال",localOnly:"التعليقات محفوظة على WAVO وتظهر للحسابات المسجلة.",search:"البحث",videos:"فيديوهاتي",likes:"إعجاباتي",saved:"المحفوظات",empty:"لا توجد فيديوهات حالياً. كن أول من ينشر على WAVO!",noSaved:"لا توجد فيديوهات محفوظة.",loading:"جاري تحميل فيديوهات WAVO...",choose:"اختر فيديو أولاً.",tooBig:"حجم الفيديو أكبر من 100 ميجابايت.",uploading:"جاري رفع الفيديو...",done:"تم رفع الفيديو بنجاح.",like:"إعجاب",comment:"تعليق",save:"حفظ",share:"مشاركة",sound:"الصوت",noComment:"لا توجد تعليقات بعد.",guest:"تستخدم المنصة كزائر.",loadError:"تعذر تحميل الفيديوهات. تحقق من صلاحية القراءة لحاوية videos.",inboxText:"صندوق الوارد والرسائل قيد التجهيز، وسيتم تفعيلهما بعد ربط نظام المحادثات.",friendsText:"قائمة الأصدقاء والمتابعة قيد التجهيز. يمكنك حالياً مشاهدة الفيديوهات ورفع فيديو جديد.",name:"مستخدم WAVO",savedMsg:"تم حفظ الاسم."},
+en:{tag:"Your world in one video.",forYou:"For you",community:"Community",friends:"Friends",following:"Following",liveText:"Live streaming is being prepared and will appear here when the broadcast system is ready.",profile:"Profile",inbox:"Inbox",home:"Home",newVideo:"Create video",gallery:"Gallery",camera:"Camera",preview:"Preview video",upload:"Publish video",uploadHint:"Maximum size 100 MB. Upload time depends on your connection.",comments:"Comments",send:"Send",localOnly:"Comments are saved on WAVO and visible to signed-in users.",search:"Search",videos:"My videos",likes:"Likes",saved:"Saved",empty:"No videos yet. Be the first to post on WAVO!",noSaved:"No saved videos.",loading:"Loading WAVO videos...",choose:"Choose a video first.",tooBig:"Video exceeds 100 MB.",uploading:"Uploading video...",done:"Video uploaded successfully.",like:"Like",comment:"Comment",save:"Save",share:"Share",sound:"Sound",noComment:"No comments yet.",guest:"You are browsing as a guest.",loadError:"Could not load videos. Check read access for the videos bucket.",inboxText:"Inbox and messaging are being prepared and will be enabled after the messaging system is connected.",friendsText:"Friends and following are being prepared. You can watch and upload videos now.",name:"WAVO user",savedMsg:"Name saved."},
+fr:{tag:"Votre monde en une vidéo.",forYou:"Pour vous",community:"Communauté",friends:"Amis",following:"Abonnements",liveText:"La diffusion en direct est en préparation et apparaîtra ici lorsque le système sera prêt.",profile:"Profil",inbox:"Messages",home:"Accueil",newVideo:"Créer une vidéo",gallery:"Galerie",camera:"Caméra",preview:"Aperçu",upload:"Publier",uploadHint:"Taille maximale : 100 Mo.",comments:"Commentaires",send:"Envoyer",localOnly:"Les commentaires sont enregistrés sur WAVO pour les utilisateurs connectés.",search:"Rechercher",videos:"Mes vidéos",likes:"J’aime",saved:"Favoris",empty:"Aucune vidéo. Soyez le premier à publier sur WAVO !",noSaved:"Aucune vidéo enregistrée.",loading:"Chargement des vidéos WAVO...",choose:"Choisissez une vidéo.",tooBig:"La vidéo dépasse 100 Mo.",uploading:"Envoi en cours...",done:"Vidéo envoyée avec succès.",like:"J’aime",comment:"Commenter",save:"Enregistrer",share:"Partager",sound:"Son",noComment:"Aucun commentaire.",guest:"Vous naviguez comme invité.",loadError:"Impossible de charger les vidéos. Vérifiez les droits du bucket videos.",inboxText:"La messagerie est en préparation.",friendsText:"Les amis et abonnements sont en préparation.",name:"Utilisateur WAVO",savedMsg:"Nom enregistré."}
+};
+const t=k=>(dict[lang]||dict.ar)[k]||dict.ar[k]||k;
+const store=(k,d)=>{try{return JSON.parse(localStorage.getItem("wavo_"+k)||"null")??d}catch{return d}};
+const save=(k,v)=>localStorage.setItem("wavo_"+k,JSON.stringify(v));
+const modal=(id,on=true)=>$(id).classList.toggle("show",on);
+document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>modal(b.dataset.close,false));
+document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)m.classList.remove("show")}));
+function applyLang(){document.documentElement.lang=lang;document.documentElement.dir=lang==="ar"?"rtl":"ltr";document.querySelectorAll("[data-t]").forEach(e=>e.textContent=t(e.dataset.t));$("lang").textContent=lang==="ar"?"ع":lang.toUpperCase();document.title="WAVO – وافي العالمي";}
+function publicUrl(name){return client.storage.from(BUCKET).getPublicUrl(name).data.publicUrl}
+async function storageDiagnostic(){try{if(!client)return "Supabase JS غير محمّل؛ تحقق من اتصال CDN.";const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),9000);try{const r=await fetch(URL+"/storage/v1/object/list/"+BUCKET,{method:"POST",headers:{"apikey":KEY,"Authorization":"Bearer "+KEY,"Content-Type":"application/json"},body:JSON.stringify({prefix:"",limit:5,offset:0,sortBy:{column:"created_at",order:"desc"}}),signal:controller.signal});const body=await r.text();return "HTTP "+r.status+" — "+body.slice(0,450);}finally{clearTimeout(timer);}}catch(e){return e.name==="AbortError"?"انتهت مهلة الاتصال بـ Supabase (9 ثوانٍ).":"Network/CORS — "+(e.name||"Error")+": "+(e.message||String(e));}}
+async function load(){ $("feed").innerHTML='<div class="empty">'+t("loading")+'</div>';try{if(!client)throw new Error("مكتبة Supabase لم يتم تحميلها من CDN");const request=client.storage.from(BUCKET).list("",{limit:100,offset:0,sortBy:{column:"created_at",order:"desc"}});const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error("انتهت مهلة تحميل الفيديوهات بعد 12 ثانية. تحقق من اتصال الإنترنت وإعدادات Supabase.")),12000));const {data,error}=await Promise.race([request,timeout]);if(error)throw error;files=(data||[]).filter(f=>f.name&&!f.name.startsWith(".")&&/\.(mp4|webm|mov|m4v|ogg)$/i.test(f.name)).map(f=>({name:f.name,url:publicUrl(f.name)}));render();}catch(e){console.error("WAVO feed load:",e);const d=await storageDiagnostic();$("feed").innerHTML='<div class="empty">'+t("loadError")+'<br>'+String(e.message||"")+'<br><small style="direction:ltr;display:block;overflow-wrap:anywhere;margin-top:10px">'+d.replace(/[&<>"]/g,x=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[x]))+'</small><br><button type="button" id="retryFeed" class="secondary" style="margin-top:12px">إعادة تحميل الفيديوهات ↻</button></div>';const retry=$("retryFeed");if(retry)retry.onclick=load;}}
+function render(){let list=[...files];if(filter==="saved"){const s=store("saved",[]);list=list.filter(v=>s.includes(v.name));}if(query){const q=query.toLowerCase();list=list.filter(v=>v.name.toLowerCase().includes(q)||(store("descriptions",{})[v.name]||"").toLowerCase().includes(q));}if(!list.length){$("feed").innerHTML='<div class="empty">'+(filter==="saved"?t("noSaved"):t("empty"))+'</div>';return;}$("feed").innerHTML="";list.forEach(v=>{const card=document.createElement("article");card.className="video-card";const player=document.createElement("video");player.src=v.url;player.playsInline=true;player.loop=true;player.muted=!soundEnabled;player.preload="metadata";let indicatorTimer;
+player.addEventListener("click",()=>{
+ const wasPaused=player.paused;
+ const indicator=card.querySelector(".pause-indicator");
+ if(wasPaused){
+  player.play().then(()=>{
+   indicator.textContent="▶";
+   indicator.classList.add("show");
+   clearTimeout(indicatorTimer);
+   indicatorTimer=setTimeout(()=>indicator.classList.remove("show"),650);
+  }).catch(()=>{});
+ }else{
+  player.pause();
+  indicator.textContent="Ⅱ";
+  indicator.classList.add("show");
+  clearTimeout(indicatorTimer);
+ }
+});const shade=document.createElement("div");shade.className="shade";const info=document.createElement("div");info.className="vinfo";const author=document.createElement("div");author.className="author";author.textContent="@"+(localStorage.getItem("wavo_name")||t("name"));const cap=document.createElement("p");cap.className="caption";cap.textContent=store("descriptions",{})[v.name]||"🎬 WAVO";const sound=document.createElement("div");sound.className="sound";sound.textContent="♫ "+t("sound");info.append(author,cap,sound);const actions=document.createElement("div");actions.className="actions";const likes=store("likes",{}),saved=store("saved",[]),comments=store("comments",{});const add=(symbol,label,count,fn,cls="")=>{const w=document.createElement("div");w.className="aw";const b=document.createElement("button");b.className="act "+cls;b.textContent=symbol;b.title=label;b.onclick=fn;const c=document.createElement("span");c.className="count";c.textContent=count;w.append(b,c);actions.append(w);};const followBtn=document.createElement("button");followBtn.type="button";followBtn.className="follow-avatar-btn";followBtn.textContent=(localStorage.getItem("wavo_name")||"W").trim().slice(0,1).toUpperCase();followBtn.title="اكتشف وتابع المستخدمين";followBtn.setAttribute("aria-label","اكتشف وتابع المستخدمين");followBtn.onclick=()=>openFriends("discover");actions.append(followBtn);add(likes[v.name]?"♥":"♡",t("like"),likes[v.name]?"1":"",()=>{const x=store("likes",{});if(x[v.name])delete x[v.name];else x[v.name]=true;save("likes",x);render();},likes[v.name]?"on":"");add("💬",t("comment"),(comments[v.name]||[]).length,()=>openComments(v.name));add(saved.includes(v.name)?"★":"☆",t("save"),"",()=>{let a=store("saved",[]);a=a.includes(v.name)?a.filter(x=>x!==v.name):[...a,v.name];save("saved",a);render();},saved.includes(v.name)?"saved":"");add("↗",t("share"),"",async()=>{try{if(navigator.share)await navigator.share({title:"WAVO",url:v.url});else{await navigator.clipboard.writeText(v.url);alert("Link copied");}}catch{}});add("♫",t("sound"),"",()=>{soundEnabled=!soundEnabled;localStorage.setItem("wavo_sound_enabled",soundEnabled?"true":"false");document.querySelectorAll(".video-card video").forEach(x=>x.muted=!soundEnabled);if(player.paused)player.play().catch(()=>{});});const pauseIndicator=document.createElement("div");pauseIndicator.className="pause-indicator";pauseIndicator.textContent="Ⅱ";card.append(player,shade,pauseIndicator,info,actions);$("feed").append(card);});setupAuto();}
+let soundEnabled=localStorage.getItem("wavo_sound_enabled")!=="false";let observer;function setupAuto(){if(observer)observer.disconnect();if(!("IntersectionObserver"in window))return;observer=new IntersectionObserver(es=>es.forEach(e=>{const v=e.target.querySelector("video");if(!v)return;if(e.isIntersecting&&e.intersectionRatio>.65){document.querySelectorAll(".video-card video").forEach(x=>{if(x!==v)x.pause()});v.muted=!soundEnabled;v.play().catch(()=>{if(soundEnabled){v.muted=true;v.play().catch(()=>{});}});}else v.pause();}),{threshold:[.2,.65,.9]});document.querySelectorAll(".video-card").forEach(c=>observer.observe(c));}
+async function openComments(name){activeComment=name;const box=$("commentList");box.innerHTML='<p class="hint">جاري تحميل التعليقات...</p>';modal("commentsModal");if(!user){box.innerHTML='<p class="hint">سجّل الدخول أولاً لعرض التعليقات وإضافتها.</p>';return;}try{const {data,error}=await client.from("wavo_comments").select("id,user_id,display_name,body,created_at").eq("video_name",name).order("created_at",{ascending:true}).limit(200);if(error)throw error;box.innerHTML="";if(!data?.length){const p=document.createElement("p");p.className="hint";p.textContent=t("noComment");box.append(p);}else data.forEach(c=>{const d=document.createElement("div");d.className="comment";d.textContent=(c.display_name||"مستخدم WAVO")+": "+c.body;box.append(d);});}catch(e){box.innerHTML='<p class="hint">تعذر تحميل التعليقات: '+safeText(e.message||e)+'</p><p class="hint">تحقق من تنفيذ جدول wavo_comments وسياسات الصلاحيات في Supabase.</p>';}}
+$("sendComment").onclick=async()=>{const value=$("commentInput").value.trim();if(!value||!activeComment)return;if(!user){$("commentList").innerHTML='<p class="hint">سجّل الدخول أولاً لإضافة تعليق.</p>';return;}const b=$("sendComment");b.disabled=true;try{const display=localStorage.getItem("wavo_name")||user.user_metadata?.full_name||user.email?.split("@")[0]||"مستخدم WAVO";const {error}=await client.from("wavo_comments").insert({video_name:activeComment,user_id:user.id,display_name:display,body:value});if(error)throw error;$("commentInput").value="";await openComments(activeComment);}catch(e){const p=document.createElement("p");p.className="hint";p.textContent="تعذر إرسال التعليق: "+(e.message||e);$("commentList").append(p);}finally{b.disabled=false;}};
+
+async function syncWavoProfile(u){
+ if(!u||!client)return;
+ const display=(u.user_metadata?.full_name||localStorage.getItem("wavo_name")||u.email?.split("@")[0]||"WAVO user").slice(0,40);
+ const {error}=await client.from("wavo_profiles").upsert({user_id:u.id,display_name:display,updated_at:new Date().toISOString()},{onConflict:"user_id"});
+ if(error)console.warn("WAVO profile sync:",error.message);
+}
+
+/* Public profile pages */
+let viewedProfileId=null, viewedProfilePreviousModal="friendsModal";
+async function openPublicProfile(profileId,profileName="مستخدم WAVO",avatarUrl=""){
+ if(!profileId||!client)return;
+ viewedProfileId=profileId;
+ $("publicProfileName").textContent=profileName||"مستخدم WAVO";
+ $("publicProfileHandle").textContent="@"+String(profileName||"wavo_user").trim().replace(/\\s+/g,"_").toLowerCase();
+ $("publicProfileAvatar").src=avatarUrl||"";
+ $("publicProfileAvatar").style.visibility=avatarUrl?"visible":"hidden";
+ $("publicProfileBio").textContent="عضو في WAVO — عالمك في فيديو واحد.";
+ $("publicProfileGrid").innerHTML='<div class="profile-empty">جاري تحميل فيديوهات الحساب...</div>';
+ $("publicProfileFollow").textContent="متابعة +";
+ $("publicProfileFollow").disabled=!user||user.id===profileId;
+ $("publicProfileFollow").style.opacity=(!user||user.id===profileId)?".55":"1";
+ modal("publicProfileModal");
+ try{
+  const [{data:profile,error:pe},{count:followers,error:fe},{count:following,error:ge},{data:follow,error:fo}]=await Promise.all([
+   client.from("wavo_profiles").select("user_id,display_name,avatar_url").eq("user_id",profileId).maybeSingle(),
+   client.from("wavo_follows").select("*",{count:"exact",head:true}).eq("following_id",profileId),
+   client.from("wavo_follows").select("*",{count:"exact",head:true}).eq("follower_id",profileId),
+   user&&user.id!==profileId?client.from("wavo_follows").select("follower_id").eq("follower_id",user.id).eq("following_id",profileId).maybeSingle():Promise.resolve({data:null,error:null})
+  ]);
+  if(pe)throw pe;if(fe)throw fe;if(ge)throw ge;if(fo)throw fo;
+  if(profile){$("publicProfileName").textContent=profile.display_name||profileName;$("publicProfileHandle").textContent="@"+String(profile.display_name||profileName||"wavo_user").trim().replace(/\\s+/g,"_").toLowerCase();if(profile.avatar_url){$("publicProfileAvatar").src=profile.avatar_url;$("publicProfileAvatar").style.visibility="visible";}}
+  $("publicProfileFollowers").textContent=followers||0;$("publicProfileFollowing").textContent=following||0;
+  $("publicProfileFollow").textContent=follow?.follower_id?"تتابعه ✓":"متابعة +";
+  $("publicProfileFollow").classList.toggle("following",!!follow?.follower_id);
+  $("publicProfileGrid").innerHTML='<div class="profile-empty">ستظهر فيديوهات هذا الحساب هنا بعد ربط الفيديوهات بملكية أصحابها.\nيمكنك متابعة الحساب والتواصل معه الآن.</div>';
+ }catch(e){$("publicProfileGrid").innerHTML='<div class="profile-empty">تعذر تحميل الملف الشخصي: '+safeText(e.message||e)+'</div>';}
+}
+$("publicProfileFollow").onclick=async()=>{
+ if(!user||!viewedProfileId||user.id===viewedProfileId)return;
+ const b=$("publicProfileFollow");b.disabled=true;
+ try{
+  if(b.textContent.includes("تتابعه")){const {error}=await client.from("wavo_follows").delete().eq("follower_id",user.id).eq("following_id",viewedProfileId);if(error)throw error;b.textContent="متابعة +";b.classList.remove("following");}
+  else{const {error}=await client.from("wavo_follows").insert({follower_id:user.id,following_id:viewedProfileId});if(error)throw error;b.textContent="تتابعه ✓";b.classList.add("following");}
+ }catch(e){$("publicProfileBio").textContent="تعذر تحديث المتابعة: "+(e.message||e);}
+ finally{b.disabled=false;}
+};
+$("publicProfileMessage").onclick=()=>{if(!user){$("publicProfileBio").textContent="سجّل الدخول لإرسال رسالة خاصة.";return;}if(!viewedProfileId)return;$("publicProfileModal").classList.remove("show");openChat(viewedProfileId,$("publicProfileName").textContent);};
+$("publicProfileBack").onclick=()=>{$("publicProfileModal").classList.remove("show");modal(viewedProfilePreviousModal);};
+\nasync function openFriends(mode="discover"){
+ peopleMode=mode;
+ $("friendsTitle").textContent=mode==="following"?"الحسابات التي أتابعها":"الأصدقاء والمتابعة";
+ $("friendsHint").textContent=mode==="following"?"هذه الحسابات التي تتابعها على WAVO.":"ابحث عن مستخدمي WAVO وتابع الحسابات التي تعجبك.";
+ $("peopleSearch").value="";
+ modal("friendsModal");
+ await refreshPeople();
+}
+async function refreshPeople(){
+ const box=$("peopleList");
+ if(!user){box.innerHTML='<p class="hint">سجّل الدخول أولاً لاستخدام الأصدقاء والمتابعة.</p><button class="primary" id="friendsLogin">تسجيل الدخول</button>'; $("friendsLogin").onclick=()=>{$("friendsModal").classList.remove("show");$("profileNav").click();}; return;}
+ box.innerHTML='<p class="hint">جاري تحميل المستخدمين...</p>';
+ try{
+  const [{count:followingCount,error:e1},{count:followersCount,error:e2},followRes]=await Promise.all([
+   client.from("wavo_follows").select("*",{count:"exact",head:true}).eq("follower_id",user.id),
+   client.from("wavo_follows").select("*",{count:"exact",head:true}).eq("following_id",user.id),
+   client.from("wavo_follows").select("following_id").eq("follower_id",user.id)
+  ]);
+  if(e1)throw e1;if(e2)throw e2;if(followRes.error)throw followRes.error;
+  $("followingCount").textContent=followingCount||0;$("followersCount").textContent=followersCount||0;
+  const followed=(followRes.data||[]).map(x=>x.following_id);
+  let req=client.from("wavo_profiles").select("user_id,display_name,avatar_url").neq("user_id",user.id).order("updated_at",{ascending:false}).limit(60);
+  const term=$("peopleSearch").value.trim();
+  if(term)req=req.ilike("display_name","%"+term.replace(/[%_]/g,"")+"%");
+  if(peopleMode==="following"){
+   if(!followed.length){box.innerHTML='<p class="hint">لم تتابع أي حساب بعد. ابحث عن مستخدمين وابدأ المتابعة.</p>';return;}
+   req=req.in("user_id",followed);
+  }
+  const {data,error}=await req;if(error)throw error;
+  if(!data?.length){box.innerHTML='<p class="hint">لم يتم العثور على مستخدمين. جرّب اسماً آخر.</p>';return;}
+  box.innerHTML="";
+  data.forEach(p=>{
+   const row=document.createElement("div");row.className="person";
+   const avatar=document.createElement("div");avatar.className="person-avatar";avatar.textContent=(p.display_name||"W").trim().slice(0,1).toUpperCase();
+   const main=document.createElement("div");main.className="person-main";
+   const name=document.createElement("div");name.className="person-name";name.textContent=p.display_name||"WAVO user";
+   const meta=document.createElement("div");meta.className="person-meta";meta.textContent="عضو في WAVO";
+   main.append(name,meta);
+   const btn=document.createElement("button");btn.className="follow-btn"+(followed.includes(p.user_id)?" following":"");btn.textContent=followed.includes(p.user_id)?"تتابعه ✓":"متابعة +";
+   btn.onclick=async()=>{btn.disabled=true;try{if(followed.includes(p.user_id)){const {error}=await client.from("wavo_follows").delete().eq("follower_id",user.id).eq("following_id",p.user_id);if(error)throw error;}else{const {error}=await client.from("wavo_follows").insert({follower_id:user.id,following_id:p.user_id});if(error)throw error;}await refreshPeople();}catch(e){$("peopleStatus").textContent=e.message||"تعذر تحديث المتابعة";btn.disabled=false;}};
+   row.append(avatar,main,btn);avatar.style.cursor="pointer";main.style.cursor="pointer";avatar.onclick=()=>{viewedProfilePreviousModal="friendsModal";openPublicProfile(p.user_id,p.display_name,p.avatar_url);};main.onclick=()=>{viewedProfilePreviousModal="friendsModal";openPublicProfile(p.user_id,p.display_name,p.avatar_url);};box.append(row);
+  });
+ }catch(e){box.innerHTML='<p class="hint">تعذر تحميل الأصدقاء: '+String(e.message||e)+'</p><p class="hint">تأكد من تنفيذ ملف supabase/wavo_social.sql في SQL Editor داخل Supabase.</p>';}
+}
+$("peopleSearchBtn").onclick=refreshPeople;
+$("peopleSearch").addEventListener("keydown",e=>{if(e.key==="Enter")refreshPeople();});
+
+
+/* WAVO private messaging */
+let activePeer=null, activePeerName="", inboxChannel=null, chatBusy=false;
+function safeText(s){return String(s??"");}
+function shortTime(v){if(!v)return "";const d=new Date(v);return d.toLocaleString(lang==="ar"?"ar":lang==="fr"?"fr":"en",{hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"});}
+function inboxRequireLogin(){if(user)return true;$("inboxStatus").textContent="سجّل الدخول أولاً لاستخدام الرسائل الخاصة.";return false;}
+async function openInbox(){
+ setNav("inboxNav");modal("inboxModal");
+ if(!inboxRequireLogin()){$("inboxList").innerHTML='<p class="hint">سجّل الدخول من صفحة حسابي لعرض الرسائل وإرسالها.</p>';return;}
+ await loadInbox();
+}
+async function loadInbox(){
+ if(!user||!client)return;
+ const box=$("inboxList");box.innerHTML='<p class="hint">جاري تحميل المحادثات...</p>';$("inboxStatus").textContent="";
+ try{
+  const {data,error}=await client.from("wavo_messages").select("id,sender_id,recipient_id,body,created_at,read_at").or("sender_id.eq."+user.id+",recipient_id.eq."+user.id).order("created_at",{ascending:false}).limit(150);
+  if(error)throw error;
+  const latest=new Map();
+  (data||[]).forEach(m=>{const peer=m.sender_id===user.id?m.recipient_id:m.sender_id;if(!latest.has(peer))latest.set(peer,m);});
+  const ids=[...latest.keys()];
+  if(!ids.length){box.innerHTML='<p class="empty">لا توجد محادثات بعد. ابحث عن مستخدم WAVO بالأعلى لبدء محادثة.</p>';return;}
+  const {data:profiles,error:profileError}=await client.from("wavo_profiles").select("user_id,display_name,avatar_url").in("user_id",ids);
+  if(profileError)throw profileError;
+  const byId=new Map((profiles||[]).map(p=>[p.user_id,p]));
+  box.innerHTML="";
+  ids.forEach(peer=>{
+   const m=latest.get(peer),p=byId.get(peer)||{},name=p.display_name||"مستخدم WAVO";
+   const row=document.createElement("button");row.className="inbox-row";row.type="button";
+   const av=document.createElement("div");av.className="inbox-avatar";av.textContent=name.trim().slice(0,1)||"W";
+   const main=document.createElement("div");main.className="inbox-main";
+   const top=document.createElement("div");top.className="inbox-topline";
+   const nm=document.createElement("strong");nm.textContent=name;
+   const tm=document.createElement("span");tm.className="inbox-time";tm.textContent=shortTime(m.created_at);
+   top.append(nm,tm);
+   const preview=document.createElement("div");preview.className="inbox-preview";preview.textContent=(m.sender_id===user.id?"أنت: ":"")+m.body;
+   main.append(top,preview);row.append(av,main);
+   if(m.recipient_id===user.id&&!m.read_at){const dot=document.createElement("span");dot.className="inbox-unread";dot.textContent="•";row.append(dot);}
+   row.onclick=()=>openChat(peer,name);box.append(row);
+  });
+ }catch(e){box.innerHTML='<p class="hint">تعذر تحميل الرسائل: '+safeText(e.message||e)+'</p><p class="hint">تأكد من تنفيذ ملف supabase/wavo_messages.sql في SQL Editor.</p>';}
+}
+async function searchInboxUsers(){
+ if(!inboxRequireLogin())return;
+ const term=$("inboxSearch").value.trim(),box=$("inboxSearchResults");box.innerHTML="";
+ if(term.length<2){box.innerHTML='<p class="hint">اكتب حرفين على الأقل للبحث.</p>';return;}
+ try{
+  const {data,error}=await client.from("wavo_profiles").select("user_id,display_name").ilike("display_name","%"+term.replace(/[%_]/g,"")+"%").neq("user_id",user.id).limit(20);
+  if(error)throw error;
+  if(!data?.length){box.innerHTML='<p class="hint">لم يتم العثور على مستخدم بهذا الاسم.</p>';return;}
+  data.forEach(p=>{const b=document.createElement("button");b.className="inbox-row";b.type="button";const av=document.createElement("div");av.className="inbox-avatar";av.textContent=(p.display_name||"W").trim().slice(0,1);const nm=document.createElement("strong");nm.textContent=p.display_name||"مستخدم WAVO";const hint=document.createElement("div");hint.className="inbox-preview";hint.textContent="بدء محادثة خاصة";const main=document.createElement("div");main.className="inbox-main";main.append(nm,hint);b.append(av,main);b.onclick=()=>openChat(p.user_id,p.display_name||"مستخدم WAVO");box.append(b);});
+ }catch(e){box.innerHTML='<p class="hint">تعذر البحث: '+safeText(e.message||e)+'</p>';}
+}
+async function openChat(peer,name){
+ if(!user||!peer||peer===user.id)return;
+ activePeer=peer;activePeerName=name;$("chatTitle").textContent=name;$("chatSubtitle").textContent="محادثة خاصة";$("chatMessages").innerHTML='<p class="hint">جاري تحميل الرسائل...</p>';$("chatInput").value="";modal("chatModal");
+ await loadChat();
+}
+async function loadChat(){
+ if(!activePeer||!user)return;
+ const box=$("chatMessages");
+ try{
+  const filterExpr="and(sender_id.eq."+user.id+",recipient_id.eq."+activePeer+"),and(sender_id.eq."+activePeer+",recipient_id.eq."+user.id+")";
+  const {data,error}=await client.from("wavo_messages").select("id,sender_id,recipient_id,body,created_at,read_at").or(filterExpr).order("created_at",{ascending:true}).limit(300);
+  if(error)throw error;
+  box.innerHTML="";
+  if(!data?.length){const p=document.createElement("p");p.className="hint";p.textContent="ابدأ المحادثة بإرسال أول رسالة.";box.append(p);}
+  (data||[]).forEach(m=>{const wrap=document.createElement("div");wrap.className="chat-bubble "+(m.sender_id===user.id?"mine":"theirs");const body=document.createElement("div");body.textContent=m.body;const meta=document.createElement("div");meta.className="chat-meta";meta.textContent=shortTime(m.created_at)+(m.sender_id===user.id?(m.read_at?" · تمت القراءة":" · تم الإرسال"):"");wrap.append(body,meta);box.append(wrap);});
+  box.scrollTop=box.scrollHeight;
+  const unread=(data||[]).filter(m=>m.recipient_id===user.id&&!m.read_at).map(m=>m.id);
+  if(unread.length){const {error:readError}=await client.from("wavo_messages").update({read_at:new Date().toISOString()}).in("id",unread);if(readError)console.warn("Read receipt:",readError.message);}
+ }catch(e){box.innerHTML='<p class="hint">تعذر فتح المحادثة: '+safeText(e.message||e)+'</p>';}
+}
+async function sendChatMessage(){
+ const body=$("chatInput").value.trim();if(!body||!activePeer||!user||chatBusy)return;
+ chatBusy=true;$("chatSend").disabled=true;$("chatStatus").textContent="جاري الإرسال...";
+ try{
+  const {error}=await client.from("wavo_messages").insert({sender_id:user.id,recipient_id:activePeer,body});
+  if(error)throw error;
+  $("chatInput").value="";$("chatStatus").textContent="";await loadChat();await loadInbox();
+ }catch(e){$("chatStatus").textContent="تعذر إرسال الرسالة: "+safeText(e.message||e);}
+ finally{chatBusy=false;$("chatSend").disabled=false;}
+}
+$("inboxSearchBtn").onclick=searchInboxUsers;
+$("inboxSearch").addEventListener("keydown",e=>{if(e.key==="Enter")searchInboxUsers();});
+$("inboxReload").onclick=loadInbox;
+$("chatSend").onclick=sendChatMessage;
+$("chatInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChatMessage();}});
+
+
+function setupInboxRealtime(){
+ if(inboxChannel){client.removeChannel(inboxChannel);inboxChannel=null;}
+ if(!user)return;
+ inboxChannel=client.channel("wavo-inbox-"+user.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"wavo_messages",filter:"recipient_id=eq."+user.id},payload=>{
+  if($("inboxModal").classList.contains("show"))loadInbox();
+  if($("chatModal").classList.contains("show")&&activePeer===payload.new.sender_id)loadChat();
+ }).subscribe();
+}
+
+/* WAVO notifications center */
+let notificationsChannel=null;
+function notificationIcon(type){return type==="follow"?"♧":type==="message"?"✉":type==="like"?"♥":type==="comment"?"💬":"🔔";}
+function notificationText(n){const actor=n.actor_name||"مستخدم WAVO";if(n.type==="follow")return actor+" بدأ بمتابعتك";if(n.type==="message")return "رسالة جديدة من "+actor;if(n.type==="like")return actor+" أعجب بفيديو لك";if(n.type==="comment")return actor+" علّق على فيديو لك";return n.message||"لديك إشعار جديد";}
+function updateNotificationBadge(count){const label=count>99?"99+":String(count);const b=$("notificationBadge"),a=$("activityBadge");[b,a].forEach(el=>{if(!el)return;el.textContent=label;el.style.display=count>0?"grid":"none";});}
+async function loadNotifications(){if(!user||!client){$("notificationsList").innerHTML='<p class="hint">سجّل الدخول لعرض إشعاراتك.</p>';updateNotificationBadge(0);return;}const box=$("notificationsList");box.innerHTML='<p class="hint">جاري تحميل الإشعارات...</p>';$("notificationsStatus").textContent="";try{const {data,error}=await client.from("wavo_notifications").select("id,actor_id,type,message,created_at,read_at").eq("recipient_id",user.id).order("created_at",{ascending:false}).limit(80);if(error)throw error;const rows=data||[];const actorIds=[...new Set(rows.map(x=>x.actor_id).filter(Boolean))];let profiles=[];if(actorIds.length){const p=await client.from("wavo_profiles").select("user_id,display_name").in("user_id",actorIds);if(p.error)throw p.error;profiles=p.data||[];}const names=new Map(profiles.map(p=>[p.user_id,p.display_name]));rows.forEach(n=>n.actor_name=names.get(n.actor_id)||"مستخدم WAVO");updateNotificationBadge(rows.filter(n=>!n.read_at).length);if(!rows.length){box.innerHTML='<p class="empty">لا توجد إشعارات حتى الآن.</p>';return;}box.innerHTML="";rows.forEach(n=>{const b=document.createElement("button");b.type="button";b.className="notif-row"+(n.read_at?"":" unread");const ic=document.createElement("span");ic.className="notif-icon";ic.textContent=notificationIcon(n.type);const body=document.createElement("span");body.className="notif-copy";const msg=document.createElement("span");msg.textContent=notificationText(n);const date=document.createElement("div");date.className="notif-date";date.textContent=shortTime(n.created_at);body.append(msg,date);b.append(ic,body);b.onclick=async()=>{if(!n.read_at){const {error}=await client.from("wavo_notifications").update({read_at:new Date().toISOString()}).eq("id",n.id).eq("recipient_id",user.id);if(error){$("notificationsStatus").textContent="تعذر تحديث حالة الإشعار: "+error.message;return;}n.read_at=new Date().toISOString();b.classList.remove("unread");updateNotificationBadge(Math.max(0,Number($("notificationBadge").textContent)||0)-1);}if(n.type==="message"){modal("notificationsModal",false);openInbox();}};box.append(b);});}catch(e){box.innerHTML='<p class="hint">تعذر تحميل الإشعارات: '+safeText(e.message||e)+'</p><p class="hint">نفّذ ملف supabase/wavo_notifications.sql في SQL Editor أولاً.</p>';}}
+async function openNotifications(){setNav("inboxNav");modal("notificationsModal");await loadNotifications();}
+async function markAllNotificationsRead(){if(!user)return;const {error}=await client.from("wavo_notifications").update({read_at:new Date().toISOString()}).eq("recipient_id",user.id).is("read_at",null);if(error){$("notificationsStatus").textContent="تعذر تحديد الإشعارات كمقروءة: "+error.message;return;}await loadNotifications();}
+function setupNotificationsRealtime(){if(notificationsChannel){client.removeChannel(notificationsChannel);notificationsChannel=null;}if(!user)return;notificationsChannel=client.channel("wavo-notifications-"+user.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"wavo_notifications",filter:"recipient_id=eq."+user.id},()=>{loadNotifications();}).subscribe();loadNotifications();}
+$("openActivity").onclick=openNotifications;$("notificationsReadAll").onclick=markAllNotificationsRead;
+
+function setNav(id){document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));$(id)?.classList.add("active");}
+$("homeNav").onclick=()=>{filter="all";query="";setNav("homeNav");render();$("feed").scrollTo(0,0)};$("liveOpen").onclick=()=>showInfo("liveText");
+$("refresh").onclick=load;$("forYou").onclick=()=>{filter="all";render();};$("popular").onclick=()=>{filter="all";render();};$("following").onclick=()=>openFriends("following");$("friendsNav").onclick=()=>{setNav("friendsNav");openFriends("discover");};$("inboxNav").onclick=openInbox;
+function showInfo(key){$("infoTitle").textContent=lang==="ar"?"قريباً":lang==="en"?"Coming soon":"Bientôt";$("infoText").textContent=t(key);modal("infoModal");}
+$("uploadNav").onclick=()=>{setNav("uploadNav");$("uploadStatus").textContent="";modal("uploadModal");};
+$("searchOpen").onclick=()=>modal("searchModal");$("doSearch").onclick=()=>{query=$("searchInput").value.trim();filter="all";modal("searchModal",false);render();};
+$("profileNav").onclick=async()=>{setNav("profileNav");const {data}=await client.auth.getUser();user=data.user||null;if(!user){modal("profileModal");return;}const savedName=localStorage.getItem("wavo_name")||user.user_metadata?.full_name||user.email?.split("@")[0]||"مستخدم WAVO";await syncWavoProfile(user);viewedProfilePreviousModal="profileModal";await openPublicProfile(user.id,savedName,"");$("publicProfileMessage").textContent="تعديل الملف";$("publicProfileMessage").onclick=()=>{$("publicProfileModal").classList.remove("show");$("profileDisplayName").textContent=savedName;$("displayName").value=localStorage.getItem("wavo_name")||user.user_metadata?.full_name||"";modal("profileModal");};};
+$("saveName").onclick=async()=>{const n=$("displayName").value.trim();if(n){localStorage.setItem("wavo_name",n);$("profileDisplayName").textContent=n;$("profileHandle").textContent="@"+n.replace(/\s+/g,"_");if(user){await client.auth.updateUser({data:{full_name:n}});await client.from("wavo_profiles").upsert({user_id:user.id,display_name:n,updated_at:new Date().toISOString()},{onConflict:"user_id"});}}$("profileState").textContent=t("savedMsg");render();};
+function prepareAuth(mode){$("authStatus").textContent="";$("fullName").classList.toggle("hidden",mode!=="signup");$("loginSubmit").classList.toggle("hidden",mode==="signup");$("signupSubmit").classList.toggle("hidden",mode!=="signup");$("loginSubmit").textContent="تسجيل الدخول";$("signupSubmit").textContent="إنشاء حساب جديد";}async function openAuthFor(mode){const {data}=await client.auth.getUser();user=data.user||null;updateAuth();prepareAuth(mode);modal("authModal");} $("openLogin").onclick=()=>openAuthFor("login");$("openSignup").onclick=()=>openAuthFor("signup");
+function updateAuth(){$("signedIn").classList.toggle("hidden",!user);$("authForm").classList.toggle("hidden",!!user);$("userInfo").textContent=user?(user.email||user.phone):"";}
+$("emailMode").onclick=()=>{authMode="email";$("emailFields").classList.remove("hidden");$("phoneFields").classList.add("hidden");$("emailMode").classList.add("active");$("phoneMode").classList.remove("active");};
+$("phoneMode").onclick=()=>{authMode="phone";$("phoneFields").classList.remove("hidden");$("emailFields").classList.add("hidden");$("phoneMode").classList.add("active");$("emailMode").classList.remove("active");};
+async function runEmailAuth(mode){const email=$("email").value.trim(),password=$("password").value,name=$("fullName").value.trim();if(!email||!password){$("authStatus").textContent="أدخل البريد الإلكتروني وكلمة المرور.";return;}if(password.length<6){$("authStatus").textContent="كلمة المرور يجب أن تكون 6 أحرف على الأقل.";return;}if(mode==="signup"&&!name){$("authStatus").textContent="اكتب الاسم الكامل لإنشاء حساب جديد.";return;}const b=$(mode==="signup"?"signupSubmit":"loginSubmit");b.disabled=true;try{let r;if(mode==="signup"){r=await client.auth.signUp({email,password,options:{data:{full_name:name},emailRedirectTo:"https://mustshar2017-debug.github.io/Wavo/"}});}else{r=await client.auth.signInWithPassword({email,password});}if(r.error)throw r.error;user=r.data.user||null;$("authStatus").textContent=mode==="signup"?(r.data.session?"تم إنشاء الحساب وتسجيل الدخول.":"تم طلب إنشاء الحساب. إذا لم تصلك رسالة التأكيد، انتظر انتهاء حد الإرسال وافحص إعدادات البريد في Supabase."):"تم تسجيل الدخول بنجاح.";updateAuth();}catch(e){$("authStatus").textContent=e.message;}finally{b.disabled=false;}}
+$("loginSubmit").onclick=()=>runEmailAuth("login");$("signupSubmit").onclick=()=>runEmailAuth("signup");
+$("forgot").onclick=async()=>{const email=$("email").value.trim();if(!email){$("authStatus").textContent="اكتب بريدك أولاً.";return;}const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:"https://mustshar2017-debug.github.io/Wavo/"});$("authStatus").textContent=error?error.message:"إذا كان البريد مسجلاً فستصلك رسالة الاستعادة.";};
+$("sendOtp").onclick=async()=>{const phone=$("phone").value.trim();if(!/^\+[1-9]\d{7,14}$/.test(phone)){$("authStatus").textContent="اكتب الرقم بالصيغة الدولية مثل +249...";return;}const {error}=await client.auth.signInWithOtp({phone});$("authStatus").textContent=error?error.message:"تم طلب رمز التحقق إذا كانت خدمة SMS مفعلة.";};
+$("verifyOtp").onclick=async()=>{const {data,error}=await client.auth.verifyOtp({phone:$("phone").value.trim(),token:$("otp").value.trim(),type:"sms"});if(error){$("authStatus").textContent=error.message;return;}user=data.user;updateAuth();$("authStatus").textContent="تم تسجيل الدخول.";};
+$("signOut").onclick=async()=>{await client.auth.signOut();user=null;updateAuth();$("authStatus").textContent="تم تسجيل الخروج.";};
+if(client){client.auth.onAuthStateChange((_e,s)=>{user=s?.user||null;if(user){syncWavoProfile(user);setupInboxRealtime();setupNotificationsRealtime();}else{if(inboxChannel){client.removeChannel(inboxChannel);inboxChannel=null;}if(notificationsChannel){client.removeChannel(notificationsChannel);notificationsChannel=null;}updateNotificationBadge(0);}});}
+let previewUrl=null;
+function choose(f){if(!f)return;if(!f.type.startsWith("video/")){$("uploadStatus").textContent=t("choose");return;}selected=f;$("fileName").textContent=f.name;$("preview").innerHTML="";$("uploadStatus").textContent="";}
+$("videoFile").onchange=e=>choose(e.target.files[0]);$("cameraFile").onchange=e=>choose(e.target.files[0]);
+$("previewBtn").onclick=()=>{if(!selected){$("uploadStatus").textContent=t("choose");return;}if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=URL.createObjectURL(selected);const v=document.createElement("video");v.src=previewUrl;v.controls=true;v.playsInline=true;v.style="width:100%;max-height:240px;border-radius:12px";$("preview").replaceChildren(v);};
+$("uploadBtn").onclick=async()=>{if(!selected){$("uploadStatus").textContent=t("choose");return;}if(selected.size>100*1024*1024){$("uploadStatus").textContent=t("tooBig");return;}/* رفع مؤقت للزوار دون تسجيل دخول؛ تحكم التخزين عبر سياسة Supabase */const b=$("uploadBtn");b.disabled=true;$("uploadStatus").textContent=t("uploading");const safe=selected.name.replace(/[^\p{L}\p{N}._-]/gu,"_");const path=Date.now()+"_"+safe;try{const {error}=await client.storage.from(BUCKET).upload(path,selected,{contentType:selected.type||"video/mp4",upsert:false});if(error)throw error;const d=store("descriptions",{});d[path]=$("description").value.trim();save("descriptions",d);$("uploadStatus").textContent=t("done");selected=null;$("videoFile").value="";$("cameraFile").value="";$("description").value="";$("preview").innerHTML="";$("fileName").textContent="";if(previewUrl)URL.revokeObjectURL(previewUrl);setTimeout(()=>{modal("uploadModal",false);load();},900);}catch(e){const d=await storageDiagnostic();$("uploadStatus").textContent=(e.message||"Upload failed")+" | "+d;}finally{b.disabled=false;}};
+$("lang").onclick=()=>{lang=lang==="ar"?"en":lang==="en"?"fr":"ar";localStorage.setItem("wavo_lang",lang);applyLang();render();};
+
+// WAVO AI client. The provider key is kept only in the Supabase Edge Function.
+const aiHistory=[];
+function addAiBubble(text,who){const el=document.createElement("div");el.className="ai-bubble "+who;el.textContent=text;$("aiMessages").append(el);$("aiMessages").scrollTop=$("aiMessages").scrollHeight;}
+$("aiOpen").onclick=async()=>{const {data,error}=await client.auth.getUser();if(error||!data.user){$("aiStatus").textContent="سجّل الدخول أولاً من صفحة حسابي لاستخدام مساعد WAVO AI.";modal("aiModal");return;}modal("aiModal");};
+document.querySelectorAll("[data-ai-mode]").forEach(b=>b.onclick=()=>{$("aiMode").value=b.dataset.aiMode;});
+async function sendAi(){const message=$("aiInput").value.trim(),mode=$("aiMode").value;if(!message)return;if(message.length>2500){$("aiStatus").textContent="الرسالة طويلة جداً.";return;}const {data,error:authError}=await client.auth.getUser();if(authError||!data.user){$("aiStatus").textContent="يجب تسجيل الدخول أولاً من حسابي.";return;}addAiBubble(message,"me");$("aiInput").value="";$("aiSend").disabled=true;$("aiStatus").textContent="WAVO AI يفكر...";try{const {data:result,error}=await client.functions.invoke("wavo-ai",{body:{message,mode,language:lang,history:aiHistory.slice(-8)}});if(error)throw error;const answer=String(result?.reply||"لم يصل رد من خدمة الذكاء الاصطناعي.");addAiBubble(answer,"bot");aiHistory.push({role:"user",content:message},{role:"assistant",content:answer});$("aiStatus").textContent="";}catch(e){console.error("WAVO AI",e);$("aiStatus").textContent="تعذر الاتصال بالمساعد: "+(e.message||"تحقق من نشر وظيفة wavo-ai وإعداد مفتاح الخدمة.");}finally{$("aiSend").disabled=false;}}
+$("aiSend").onclick=sendAi;$("aiInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendAi();}});
+
+applyLang();if(client){client.auth.getUser().then(({data})=>{user=data?.user||null;if(user){syncWavoProfile(user);setupInboxRealtime();setupNotificationsRealtime();}}).catch(e=>console.warn("WAVO auth init:",e));}load();
+})();
+
+/* Show app welcome once on each browser until the visitor dismisses it */
+(function(){
+ const welcome=document.getElementById("wavo-install-welcome");
+ if(!welcome)return;
+ let dismissed=false;
+ try{dismissed=localStorage.getItem("wavo_install_welcome_dismissed")==="1";}catch(e){}
+ if(!dismissed)welcome.classList.add("show");
+ function closeWelcome(){
+  welcome.classList.remove("show");
+  try{localStorage.setItem("wavo_install_welcome_dismissed","1");}catch(e){}
+ }
+ document.getElementById("wavoContinue").addEventListener("click",closeWelcome);
+ document.getElementById("wavoAndroidDownload").addEventListener("click",function(){
+  window.open("https://github.com/mustshar2017-debug/Wavo/actions/runs/42560724022","_blank","noopener");
+  closeWelcome();
+ });
+})();
+
+</script></body></html>
