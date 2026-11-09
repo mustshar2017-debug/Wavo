@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8"><meta name="wavo-build" content="2026-11-08-tap-pause-v1"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta charset="utf-8"><meta name="wavo-build" content="2026-11-09-app-welcome-v1"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080b0e"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><title>WAVO – وافي العالمي</title>
 <style>
 :root{--bg:#080b0e;--panel:#151b20;--line:#ffffff20;--muted:#aeb8bd;--a:#55e6c1;--pink:#ff5278}
@@ -108,8 +108,42 @@ button,input,textarea,select{font-family:inherit;font-kerning:normal}
  .video-card .actions .aw{min-width:42px!important}
  .video-card .vinfo{right:68px!important;left:10px!important}
 }
+
+/* WAVO app welcome / install screen */
+#wavo-install-welcome{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:22px;background:radial-gradient(ellipse at 50% 20%,#17483e 0%,#080b0e 58%,#050709 100%);direction:rtl}
+#wavo-install-welcome.show{display:flex}
+.wavo-install-card{width:min(100%,430px);padding:30px 22px 24px;border:1px solid #55e6c155;border-radius:28px;background:linear-gradient(160deg,#17252aee,#0c1115f5);box-shadow:0 24px 80px #0009;text-align:center}
+.wavo-install-logo{width:82px;height:82px;margin:0 auto 15px;border-radius:25px;display:grid;place-items:center;background:linear-gradient(135deg,#25f4ee,#55e6c1 55%,#fe2c55);color:#07110f;font-size:28px;font-weight:1000;letter-spacing:1px;box-shadow:0 10px 35px #25f4ee30}
+.wavo-install-card h1{margin:0 0 8px;color:#55e6c1;font-size:29px;font-weight:900}
+.wavo-install-card .wavo-tagline{margin:0 0 9px;color:#fff;font-size:17px;font-weight:700}
+.wavo-install-card .wavo-intro{margin:0 auto 22px;max-width:320px;color:#b8c6c9;font-size:13px;line-height:1.8}
+.wavo-install-actions{display:grid;gap:10px}
+.wavo-install-btn{width:100%;min-height:51px;border:0;border-radius:14px;padding:12px 15px;font-size:15px;font-weight:800}
+.wavo-install-btn.android{background:#55e6c1;color:#06100d}
+.wavo-install-btn.ios{background:#ffffff12;border:1px solid #ffffff26;color:#aeb8bd}
+.wavo-install-btn.continue{background:transparent;border:1px solid #ffffff35;color:#fff}
+.wavo-install-note{margin:14px 0 0;color:#829398;font-size:11px;line-height:1.7}
+.wavo-install-btn:disabled{opacity:.72;cursor:not-allowed}
+@media(min-width:700px){#wavo-install-welcome{backdrop-filter:blur(8px)}}
+
 </style></head>
 <body>
+
+<div id="wavo-install-welcome" role="dialog" aria-modal="true" aria-labelledby="wavo-install-title">
+ <section class="wavo-install-card">
+  <div class="wavo-install-logo" aria-hidden="true">WAVO</div>
+  <h1 id="wavo-install-title">حمّل تطبيق WAVO</h1>
+  <p class="wavo-tagline">عالمك في فيديو واحد.</p>
+  <p class="wavo-intro">استمتع بتجربة WAVO على هاتفك، وتابع الفيديوهات والأصدقاء من تطبيقنا.</p>
+  <div class="wavo-install-actions">
+   <button type="button" class="wavo-install-btn android" id="wavoAndroidDownload">🤖 الحصول على نسخة Android التجريبية</button>
+   <button type="button" class="wavo-install-btn ios" disabled> نسخة iPhone قيد التجهيز</button>
+   <button type="button" class="wavo-install-btn continue" id="wavoContinue">متابعة إلى الموقع</button>
+  </div>
+  <p class="wavo-install-note">نسخة Android التجريبية متاحة من صفحة إصدارات البناء على GitHub. نسخة iPhone لم تصبح جاهزة للتثبيت بعد.</p>
+ </section>
+</div>
+
 <header class="top"><div class="brand">WAVO<small data-t="tag">عالمك في فيديو واحد.</small></div><div class="tools"><button class="tool" id="aiOpen" aria-label="WAVO AI" title="WAVO AI">✦</button><button class="tool" id="lang" aria-label="Language">ع</button><button class="tool" id="refresh" aria-label="Refresh">↻</button></div></header>
 <div class="tabs"><button id="liveOpen" class="live-pill" aria-label="Live"><span class="live-dot"></span>LIVE</button><div class="tab-links"><button id="forYou" class="active" data-t="forYou">لك</button><button id="popular" data-t="community">المجتمع</button><button id="following" data-t="following">أتابع</button></div><button class="tab-search" id="searchOpen" aria-label="Search">⌕</button></div>
 <main class="feed" id="feed"><div class="empty">جاري تحميل فيديوهات WAVO...</div></main>
@@ -386,4 +420,23 @@ $("aiSend").onclick=sendAi;$("aiInput").addEventListener("keydown",e=>{if(e.key=
 
 applyLang();client.auth.getUser().then(({data})=>{user=data?.user||null;if(user){syncWavoProfile(user);setupInboxRealtime();setupNotificationsRealtime();}});load();
 })();
+
+/* Show app welcome once on each browser until the visitor dismisses it */
+(function(){
+ const welcome=document.getElementById("wavo-install-welcome");
+ if(!welcome)return;
+ let dismissed=false;
+ try{dismissed=localStorage.getItem("wavo_install_welcome_dismissed")==="1";}catch(e){}
+ if(!dismissed)welcome.classList.add("show");
+ function closeWelcome(){
+  welcome.classList.remove("show");
+  try{localStorage.setItem("wavo_install_welcome_dismissed","1");}catch(e){}
+ }
+ document.getElementById("wavoContinue").addEventListener("click",closeWelcome);
+ document.getElementById("wavoAndroidDownload").addEventListener("click",function(){
+  window.open("https://github.com/mustshar2017-debug/Wavo/actions/runs/42560724022","_blank","noopener");
+  closeWelcome();
+ });
+})();
+
 </script></body></html>
