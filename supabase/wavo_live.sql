@@ -38,8 +38,9 @@ alter table public.wavo_live_chat enable row level security;
 
 -- Admin membership is managed only by the project owner/service role.
 drop policy if exists "live sessions readable by signed-in users" on public.wavo_live_sessions;
-create policy "live sessions readable by signed-in users"
-  on public.wavo_live_sessions for select to authenticated
+drop policy if exists "live sessions publicly readable" on public.wavo_live_sessions;
+create policy "live sessions publicly readable"
+  on public.wavo_live_sessions for select to anon, authenticated
   using (true);
 
 drop policy if exists "live chat readable by signed-in users" on public.wavo_live_chat;
@@ -58,5 +59,5 @@ create policy "signed-in users can chat in live sessions"
     )
   );
 
-grant select on public.wavo_live_sessions to authenticated;
+grant select on public.wavo_live_sessions to anon, authenticated;
 grant select, insert on public.wavo_live_chat to authenticated;
