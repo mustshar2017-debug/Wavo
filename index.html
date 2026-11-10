@@ -111,7 +111,7 @@ button,input,textarea,select{font-family:inherit;font-kerning:normal}
 .public-profile-top{height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid #eee;position:sticky;top:0;background:#fff;z-index:3}
 .public-profile-top button{border:0;background:none;color:#111;font-size:25px}
 .public-profile-head{padding:22px 18px 14px;display:grid;grid-template-columns:126px 1fr;gap:16px;direction:rtl;align-items:center}
-.public-profile-avatar{width:126px;height:126px;border-radius:50%;object-fit:cover;background:#e8f7f3;border:1px solid #eee}
+.public-profile-avatar{width:126px;height:126px;border-radius:50%;object-fit:cover;background:#e8f7f3;border:1px solid #eee}.public-avatar-wrap{position:relative;width:126px;height:126px}.public-avatar-edit{position:absolute;bottom:2px;right:2px;border:0;border-radius:50%;width:38px;height:38px;background:#55e6c1;color:#06100d;font-size:19px;font-weight:900;box-shadow:0 2px 8px #0003}.public-avatar-edit[hidden]{display:none}.public-profile-grid .profile-tile video{display:block}
 .public-profile-name{font-size:clamp(21px,5vw,30px);font-weight:900;line-height:1.3;overflow-wrap:anywhere}
 .public-profile-handle{color:#888;font-size:14px;margin-top:5px}
 .public-profile-stats{display:flex;justify-content:space-around;text-align:center;padding:13px 10px;border-bottom:1px solid #eee;direction:rtl}
@@ -163,7 +163,7 @@ button,input,textarea,select{font-family:inherit;font-kerning:normal}
 
 <div class="modal public-profile-modal" id="publicProfileModal"><section class="sheet public-profile-sheet">
  <div class="public-profile-top"><button id="publicProfileBack" aria-label="رجوع">‹</button><strong>الملف الشخصي</strong><button data-close="publicProfileModal" aria-label="إغلاق">×</button></div>
- <div class="public-profile-head"><img id="publicProfileAvatar" class="public-profile-avatar" alt="الصورة الشخصية"><div><div id="publicProfileName" class="public-profile-name">مستخدم WAVO</div><div id="publicProfileHandle" class="public-profile-handle">@wavo_user</div></div></div>
+ <div class="public-profile-head"><div class="public-avatar-wrap"><img id="publicProfileAvatar" class="public-profile-avatar" alt="الصورة الشخصية"><button type="button" id="publicAvatarEdit" class="public-avatar-edit" hidden title="تغيير الصورة">📷</button><input id="publicAvatarFile" type="file" accept="image/*" hidden></div><div><div id="publicProfileName" class="public-profile-name">مستخدم WAVO</div><div id="publicProfileHandle" class="public-profile-handle">@wavo_user</div></div></div>
  <div class="public-profile-stats"><div><strong id="publicProfilePosts">0</strong><span>فيديو</span></div><div><strong id="publicProfileFollowers">0</strong><span>متابعون</span></div><div><strong id="publicProfileFollowing">0</strong><span>يتابع</span></div><div><strong id="publicProfileLikes">0</strong><span>إعجابات</span></div></div>
  <div id="publicProfileBio" class="public-profile-bio">عضو في WAVO — عالمك في فيديو واحد.</div>
  <div class="public-profile-actions"><button id="publicProfileFollow">متابعة +</button><button id="publicProfileMessage" class="secondary-profile">رسالة</button></div>
@@ -310,7 +310,7 @@ async function syncWavoProfile(u){
 }
 
 /* Public profile pages */
-let viewedProfileId=null, viewedProfilePreviousModal="friendsModal";
+let viewedProfileId=null, viewedProfilePreviousModal="friendsModal", activeProfileTab="videos";
 async function openPublicProfile(profileId,profileName="مستخدم WAVO",avatarUrl=""){
  if(!profileId||!client)return;
  viewedProfileId=profileId;
@@ -318,6 +318,9 @@ async function openPublicProfile(profileId,profileName="مستخدم WAVO",avata
  $("publicProfileHandle").textContent="@"+String(profileName||"wavo_user").trim().replace(/\\s+/g,"_").toLowerCase();
  $("publicProfileAvatar").src=avatarUrl||"";
  $("publicProfileAvatar").style.visibility=avatarUrl?"visible":"hidden";
+ $("publicAvatarEdit").hidden=!(user&&user.id===profileId);
+ $("publicAvatarFile").value="";
+ activeProfileTab="videos";document.querySelectorAll("[data-profile-tab]").forEach(b=>b.classList.toggle("active",b.dataset.profileTab==="videos"));
  $("publicProfileBio").textContent="عضو في WAVO — عالمك في فيديو واحد.";
  $("publicProfileGrid").innerHTML='<div class="profile-empty">جاري تحميل فيديوهات الحساب...</div>';
  $("publicProfileFollow").textContent="متابعة +";
@@ -332,11 +335,11 @@ async function openPublicProfile(profileId,profileName="مستخدم WAVO",avata
    user&&user.id!==profileId?client.from("wavo_follows").select("follower_id").eq("follower_id",user.id).eq("following_id",profileId).maybeSingle():Promise.resolve({data:null,error:null})
   ]);
   if(pe)throw pe;if(fe)throw fe;if(ge)throw ge;if(fo)throw fo;
-  if(profile){$("publicProfileName").textContent=profile.display_name||profileName;$("publicProfileHandle").textContent="@"+String(profile.display_name||profileName||"wavo_user").trim().replace(/\\s+/g,"_").toLowerCase();if(profile.avatar_url){$("publicProfileAvatar").src=profile.avatar_url;$("publicProfileAvatar").style.visibility="visible";}}
+  if(profile){$("publicProfileName").textContent=profile.display_name||profileName;$("publicProfileHandle").textContent="@"+String(profile.display_name||profileName||"wavo_user").trim().replace(/\\s+/g,"_").toLowerCase();if(profile.avatar_url){$("publicProfileAvatar").src=profile.avatar_url;$("publicProfileAvatar").style.visibility="visible";}else{$("publicProfileAvatar").style.visibility="hidden";}}
   $("publicProfileFollowers").textContent=followers||0;$("publicProfileFollowing").textContent=following||0;
   $("publicProfileFollow").textContent=follow?.follower_id?"تتابعه ✓":"متابعة +";
   $("publicProfileFollow").classList.toggle("following",!!follow?.follower_id);
-  $("publicProfileGrid").innerHTML='<div class="profile-empty">ستظهر فيديوهات هذا الحساب هنا بعد ربط الفيديوهات بملكية أصحابها.\nيمكنك متابعة الحساب والتواصل معه الآن.</div>';
+  await renderPublicProfileTab("videos");
  }catch(e){$("publicProfileGrid").innerHTML='<div class="profile-empty">تعذر تحميل الملف الشخصي: '+safeText(e.message||e)+'</div>';}
 }
 $("publicProfileFollow").onclick=async()=>{
@@ -350,6 +353,10 @@ $("publicProfileFollow").onclick=async()=>{
 };
 $("publicProfileMessage").onclick=()=>{if(!user){$("publicProfileBio").textContent="سجّل الدخول لإرسال رسالة خاصة.";return;}if(!viewedProfileId)return;$("publicProfileModal").classList.remove("show");openChat(viewedProfileId,$("publicProfileName").textContent);};
 $("publicProfileBack").onclick=()=>{$("publicProfileModal").classList.remove("show");modal(viewedProfilePreviousModal);};
+async function renderPublicProfileTab(tab){activeProfileTab=tab;document.querySelectorAll("[data-profile-tab]").forEach(b=>b.classList.toggle("active",b.dataset.profileTab===tab));const grid=$("publicProfileGrid");grid.innerHTML="";let list=[];if(tab==="likes"){const liked=store("likes",{});list=files.filter(v=>liked[v.name]);}else if(tab==="saved"){const saved=store("saved",[]);list=files.filter(v=>saved.includes(v.name));}else{grid.innerHTML='<div class="profile-empty">ستظهر فيديوهاتك هنا عند ربط كل فيديو بحساب صاحبه. يمكنك حالياً عرض إعجاباتك ومحفوظاتك من التبويبات الأخرى.</div>';return;}if(!list.length){grid.innerHTML='<div class="profile-empty">لا توجد عناصر في هذا القسم حتى الآن.</div>';return;}list.forEach(v=>{const tile=document.createElement("div");tile.className="profile-tile";const video=document.createElement("video");video.src=v.url;video.muted=true;video.playsInline=true;video.preload="metadata";video.controls=true;tile.append(video);grid.append(tile);});}
+document.querySelectorAll("[data-profile-tab]").forEach(b=>b.addEventListener("click",()=>renderPublicProfileTab(b.dataset.profileTab)));
+$("publicAvatarEdit").onclick=()=>{if(user&&user.id===viewedProfileId)$("publicAvatarFile").click();};
+$("publicAvatarFile").onchange=async e=>{const file=e.target.files?.[0];if(!file)return;if(!user||user.id!==viewedProfileId)return;if(!file.type.startsWith("image/")){alert("اختر صورة بصيغة صورة.");return;}if(file.size>5*1024*1024){alert("حجم الصورة يجب ألا يتجاوز 5 ميجابايت.");return;}const b=$("publicAvatarEdit");b.disabled=true;b.textContent="…";try{const ext=(file.name.split(".").pop()||"jpg").replace(/[^a-z0-9]/gi,"").toLowerCase()||"jpg";const path="avatars/"+user.id+"/"+Date.now()+"."+ext;const {error:upErr}=await client.storage.from(BUCKET).upload(path,file,{contentType:file.type,upsert:true});if(upErr)throw upErr;const url=publicUrl(path);const {error:dbErr}=await client.from("wavo_profiles").upsert({user_id:user.id,display_name:$("publicProfileName").textContent,avatar_url:url,updated_at:new Date().toISOString()},{onConflict:"user_id"});if(dbErr)throw dbErr;$("publicProfileAvatar").src=url;$("publicProfileAvatar").style.visibility="visible";}catch(err){alert("تعذر حفظ الصورة: "+(err.message||err));}finally{b.disabled=false;b.textContent="📷";e.target.value="";}};
 
 async function openFriends(mode="discover"){
  peopleMode=mode;
