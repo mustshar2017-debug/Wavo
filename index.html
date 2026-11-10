@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8"><meta name="wavo-build" content="2026-11-10-startup-recovery-v8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta charset="utf-8"><meta name="wavo-build" content="2026-11-10-live-entry-fix-v2"><meta name="wavo-build" content="2026-11-10-startup-recovery-v8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080b0e"><meta name="application-name" content="Wavo"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><title>Wavo | وافي العالمي</title><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%23080b0e%22/%3E%3Ctext x=%2232%22 y=%2244%22 text-anchor=%22middle%22 font-family=%22Arial,sans-serif%22 font-size=%2240%22 font-weight=%22900%22 fill=%22%2355e6c1%22%3EW%3C/text%3E%3C/svg%3E">
 <style>
 :root{--bg:#080b0e;--panel:#151b20;--line:#ffffff20;--muted:#aeb8bd;--a:#55e6c1;--pink:#ff5278}
@@ -128,6 +128,7 @@ button,input,textarea,select{font-family:inherit;font-kerning:normal}
 .public-profile-grid video{width:100%;height:100%;object-fit:cover}
 .public-profile-grid .profile-empty{grid-column:1/-1;padding:45px 20px;text-align:center;color:#777;line-height:1.9}
 @media(min-width:700px){.public-profile-sheet{height:min(92dvh,900px);max-height:92dvh!important;border-radius:18px!important;margin:auto}.public-profile-modal{align-items:center!important}}
+.live-sheet{max-height:92dvh;overflow:auto}.live-actions{display:grid;gap:9px;margin:12px 0}.live-list{display:grid;gap:9px}.live-list-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#ffffff08}.live-list-item .hint{margin:4px 0 0}.live-list-title{margin:18px 0 8px;font-size:16px}.live-video{width:100%;min-height:220px;max-height:55vh;background:#000;border-radius:12px;overflow:hidden;margin:8px 0}.live-video video{width:100%;height:100%;object-fit:contain}.live-actions .field{width:100%}.live-list-item button{white-space:nowrap}
 </style></head>
 <body>
 
@@ -188,6 +189,13 @@ button,input,textarea,select{font-family:inherit;font-kerning:normal}
 <div class="chat-compose"><textarea id="chatInput" class="field" rows="1" maxlength="2000" placeholder="اكتب رسالة..."></textarea><button id="chatSend" aria-label="إرسال الرسالة">➤</button></div><p id="chatStatus" class="status"></p></section></div>
 
 <div class="modal" id="notificationsModal"><section class="sheet"><div class="sheethead"><h2>الإشعارات</h2><button class="close" data-close="notificationsModal">×</button></div><div class="sheethead"><p class="hint" style="margin:0">آخر التنبيهات على حسابك في WAVO</p><button id="notificationsReadAll" class="secondary">قراءة الكل</button></div><div id="notificationsList" class="notif-list"><p class="hint">جاري تحميل الإشعارات...</p></div><p id="notificationsStatus" class="status"></p></section></div>
+<div class="modal" id="liveModal"><section class="sheet live-sheet"><div class="sheethead"><h2>WAVO LIVE — البث المباشر</h2><button class="close" id="liveClose">×</button></div>
+<div id="liveStatus" class="status">سجّل الدخول لبدء البث أو مشاهدة البثوث المباشرة.</div>
+<div class="live-actions"><input id="liveTitle" class="field" maxlength="120" placeholder="عنوان البث المباشر"><button id="liveStart" class="primary">ابدأ البث الآن</button><button id="liveEnd" class="secondary" style="display:none">إنهاء البث</button><button id="liveRefresh" class="secondary">تحديث قائمة البثوث</button></div>
+<div id="liveLocalWrap" style="display:none"><p class="hint">أنت تبث الآن</p><div id="liveLocalVideo" class="live-video"></div></div>
+<h3 class="live-list-title">البثوث المتاحة الآن</h3><div id="liveList" class="live-list"><p class="hint">جاري تحميل البثوث...</p></div>
+<div id="liveRemoteWrap" style="display:none"><div class="sheethead"><strong id="liveRemoteTitle">مشاهدة البث</strong><button id="liveLeave" class="secondary">مغادرة</button></div><div id="liveRemoteVideo" class="live-video"></div></div>
+</section></div>
 <div class="modal" id="infoModal"><section class="sheet"><div class="sheethead"><h2 id="infoTitle">WAVO</h2><button class="close" data-close="infoModal">×</button></div><p id="infoText" class="hint"></p></section></div>
 <script>
 (function(){
@@ -208,6 +216,7 @@ button,input,textarea,select{font-family:inherit;font-kerning:normal}
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.80.0"></script>
+<script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.23.4.js"></script>
 <script>
 (()=>{
 "use strict";
@@ -223,9 +232,9 @@ window.addEventListener("unhandledrejection",e=>{console.error("WAVO unhandled r
 
 let user=null,files=[],selected=null,activeComment="",filter="all",query="",peopleMode="discover",lang=localStorage.getItem("wavo_lang")||"ar",authMode="email";
 const dict={
-ar:{tag:"عالمك في فيديو واحد.",forYou:"لك",community:"المجتمع",friends:"الأصدقاء",following:"أتابع",liveText:"البث المباشر قيد التجهيز، وسيظهر هنا عند اكتمال نظام البث.",profile:"حسابي",inbox:"صندوق الوارد",home:"الرئيسية",newVideo:"إنشاء فيديو",gallery:"الاستديو",camera:"الكاميرا",preview:"معاينة الفيديو",upload:"نشر الفيديو",uploadHint:"الحد الأقصى 100 ميجابايت. قد يعتمد وقت الرفع على سرعة الإنترنت.",comments:"التعليقات",send:"إرسال",localOnly:"التعليقات محفوظة على WAVO وتظهر للحسابات المسجلة.",search:"البحث",videos:"فيديوهاتي",likes:"إعجاباتي",saved:"المحفوظات",empty:"لا توجد فيديوهات حالياً. كن أول من ينشر على WAVO!",noSaved:"لا توجد فيديوهات محفوظة.",loading:"جاري تحميل فيديوهات WAVO...",choose:"اختر فيديو أولاً.",tooBig:"حجم الفيديو أكبر من 100 ميجابايت.",uploading:"جاري رفع الفيديو...",done:"تم رفع الفيديو بنجاح.",like:"إعجاب",comment:"تعليق",save:"حفظ",share:"مشاركة",sound:"الصوت",noComment:"لا توجد تعليقات بعد.",guest:"تستخدم المنصة كزائر.",loadError:"تعذر تحميل الفيديوهات. تحقق من صلاحية القراءة لحاوية videos.",inboxText:"صندوق الوارد والرسائل قيد التجهيز، وسيتم تفعيلهما بعد ربط نظام المحادثات.",friendsText:"قائمة الأصدقاء والمتابعة قيد التجهيز. يمكنك حالياً مشاهدة الفيديوهات ورفع فيديو جديد.",name:"مستخدم WAVO",savedMsg:"تم حفظ الاسم."},
-en:{tag:"Your world in one video.",forYou:"For you",community:"Community",friends:"Friends",following:"Following",liveText:"Live streaming is being prepared and will appear here when the broadcast system is ready.",profile:"Profile",inbox:"Inbox",home:"Home",newVideo:"Create video",gallery:"Gallery",camera:"Camera",preview:"Preview video",upload:"Publish video",uploadHint:"Maximum size 100 MB. Upload time depends on your connection.",comments:"Comments",send:"Send",localOnly:"Comments are saved on WAVO and visible to signed-in users.",search:"Search",videos:"My videos",likes:"Likes",saved:"Saved",empty:"No videos yet. Be the first to post on WAVO!",noSaved:"No saved videos.",loading:"Loading WAVO videos...",choose:"Choose a video first.",tooBig:"Video exceeds 100 MB.",uploading:"Uploading video...",done:"Video uploaded successfully.",like:"Like",comment:"Comment",save:"Save",share:"Share",sound:"Sound",noComment:"No comments yet.",guest:"You are browsing as a guest.",loadError:"Could not load videos. Check read access for the videos bucket.",inboxText:"Inbox and messaging are being prepared and will be enabled after the messaging system is connected.",friendsText:"Friends and following are being prepared. You can watch and upload videos now.",name:"WAVO user",savedMsg:"Name saved."},
-fr:{tag:"Votre monde en une vidéo.",forYou:"Pour vous",community:"Communauté",friends:"Amis",following:"Abonnements",liveText:"La diffusion en direct est en préparation et apparaîtra ici lorsque le système sera prêt.",profile:"Profil",inbox:"Messages",home:"Accueil",newVideo:"Créer une vidéo",gallery:"Galerie",camera:"Caméra",preview:"Aperçu",upload:"Publier",uploadHint:"Taille maximale : 100 Mo.",comments:"Commentaires",send:"Envoyer",localOnly:"Les commentaires sont enregistrés sur WAVO pour les utilisateurs connectés.",search:"Rechercher",videos:"Mes vidéos",likes:"J’aime",saved:"Favoris",empty:"Aucune vidéo. Soyez le premier à publier sur WAVO !",noSaved:"Aucune vidéo enregistrée.",loading:"Chargement des vidéos WAVO...",choose:"Choisissez une vidéo.",tooBig:"La vidéo dépasse 100 Mo.",uploading:"Envoi en cours...",done:"Vidéo envoyée avec succès.",like:"J’aime",comment:"Commenter",save:"Enregistrer",share:"Partager",sound:"Son",noComment:"Aucun commentaire.",guest:"Vous naviguez comme invité.",loadError:"Impossible de charger les vidéos. Vérifiez les droits du bucket videos.",inboxText:"La messagerie est en préparation.",friendsText:"Les amis et abonnements sont en préparation.",name:"Utilisateur WAVO",savedMsg:"Nom enregistré."}
+ar:{tag:"عالمك في فيديو واحد.",forYou:"لك",community:"المجتمع",friends:"الأصدقاء",following:"أتابع",liveText:"افتح نافذة WAVO LIVE لبدء بث مباشر أو مشاهدة البثوث المتاحة.",profile:"حسابي",inbox:"صندوق الوارد",home:"الرئيسية",newVideo:"إنشاء فيديو",gallery:"الاستديو",camera:"الكاميرا",preview:"معاينة الفيديو",upload:"نشر الفيديو",uploadHint:"الحد الأقصى 100 ميجابايت. قد يعتمد وقت الرفع على سرعة الإنترنت.",comments:"التعليقات",send:"إرسال",localOnly:"التعليقات محفوظة على WAVO وتظهر للحسابات المسجلة.",search:"البحث",videos:"فيديوهاتي",likes:"إعجاباتي",saved:"المحفوظات",empty:"لا توجد فيديوهات حالياً. كن أول من ينشر على WAVO!",noSaved:"لا توجد فيديوهات محفوظة.",loading:"جاري تحميل فيديوهات WAVO...",choose:"اختر فيديو أولاً.",tooBig:"حجم الفيديو أكبر من 100 ميجابايت.",uploading:"جاري رفع الفيديو...",done:"تم رفع الفيديو بنجاح.",like:"إعجاب",comment:"تعليق",save:"حفظ",share:"مشاركة",sound:"الصوت",noComment:"لا توجد تعليقات بعد.",guest:"تستخدم المنصة كزائر.",loadError:"تعذر تحميل الفيديوهات. تحقق من صلاحية القراءة لحاوية videos.",inboxText:"صندوق الوارد والرسائل قيد التجهيز، وسيتم تفعيلهما بعد ربط نظام المحادثات.",friendsText:"قائمة الأصدقاء والمتابعة قيد التجهيز. يمكنك حالياً مشاهدة الفيديوهات ورفع فيديو جديد.",name:"مستخدم WAVO",savedMsg:"تم حفظ الاسم."},
+en:{tag:"Your world in one video.",forYou:"For you",community:"Community",friends:"Friends",following:"Following",liveText:"Open WAVO LIVE to start a live stream or watch available broadcasts.",profile:"Profile",inbox:"Inbox",home:"Home",newVideo:"Create video",gallery:"Gallery",camera:"Camera",preview:"Preview video",upload:"Publish video",uploadHint:"Maximum size 100 MB. Upload time depends on your connection.",comments:"Comments",send:"Send",localOnly:"Comments are saved on WAVO and visible to signed-in users.",search:"Search",videos:"My videos",likes:"Likes",saved:"Saved",empty:"No videos yet. Be the first to post on WAVO!",noSaved:"No saved videos.",loading:"Loading WAVO videos...",choose:"Choose a video first.",tooBig:"Video exceeds 100 MB.",uploading:"Uploading video...",done:"Video uploaded successfully.",like:"Like",comment:"Comment",save:"Save",share:"Share",sound:"Sound",noComment:"No comments yet.",guest:"You are browsing as a guest.",loadError:"Could not load videos. Check read access for the videos bucket.",inboxText:"Inbox and messaging are being prepared and will be enabled after the messaging system is connected.",friendsText:"Friends and following are being prepared. You can watch and upload videos now.",name:"WAVO user",savedMsg:"Name saved."},
+fr:{tag:"Votre monde en une vidéo.",forYou:"Pour vous",community:"Communauté",friends:"Amis",following:"Abonnements",liveText:"Ouvrez WAVO LIVE pour lancer un direct ou regarder les directs disponibles.",profile:"Profil",inbox:"Messages",home:"Accueil",newVideo:"Créer une vidéo",gallery:"Galerie",camera:"Caméra",preview:"Aperçu",upload:"Publier",uploadHint:"Taille maximale : 100 Mo.",comments:"Commentaires",send:"Envoyer",localOnly:"Les commentaires sont enregistrés sur WAVO pour les utilisateurs connectés.",search:"Rechercher",videos:"Mes vidéos",likes:"J’aime",saved:"Favoris",empty:"Aucune vidéo. Soyez le premier à publier sur WAVO !",noSaved:"Aucune vidéo enregistrée.",loading:"Chargement des vidéos WAVO...",choose:"Choisissez une vidéo.",tooBig:"La vidéo dépasse 100 Mo.",uploading:"Envoi en cours...",done:"Vidéo envoyée avec succès.",like:"J’aime",comment:"Commenter",save:"Enregistrer",share:"Partager",sound:"Son",noComment:"Aucun commentaire.",guest:"Vous naviguez comme invité.",loadError:"Impossible de charger les vidéos. Vérifiez les droits du bucket videos.",inboxText:"La messagerie est en préparation.",friendsText:"Les amis et abonnements sont en préparation.",name:"Utilisateur WAVO",savedMsg:"Nom enregistré."}
 };
 const t=k=>(dict[lang]||dict.ar)[k]||dict.ar[k]||k;
 const store=(k,d)=>{try{return JSON.parse(localStorage.getItem("wavo_"+k)||"null")??d}catch{return d}};
@@ -280,7 +289,7 @@ async function load(){
   const retry=$("retryFeed");if(retry)retry.onclick=load;
  }
 }
-function render(){let list=[...files];if(filter==="saved"){const s=store("saved",[]);list=list.filter(v=>s.includes(v.name));}if(query){const q=query.toLowerCase();list=list.filter(v=>v.name.toLowerCase().includes(q)||(store("descriptions",{})[v.name]||"").toLowerCase().includes(q));}if(!list.length){$("feed").innerHTML='<div class="empty">'+(filter==="saved"?t("noSaved"):t("empty"))+'</div>';return;}$("feed").innerHTML="";list.forEach(v=>{const card=document.createElement("article");card.className="video-card";const player=document.createElement("video");player.src=v.url;player.playsInline=true;player.loop=true;player.autoplay=true;player.muted=true;player.setAttribute("autoplay","");player.setAttribute("muted","");player.preload="auto";let indicatorTimer;
+function render(){let list=[...files];if(filter==="saved"){const s=store("saved",[]);list=list.filter(v=>s.includes(v.name));}if(query){const q=query.toLowerCase();list=list.filter(v=>v.name.toLowerCase().includes(q)||(store("descriptions",{})[v.name]||"").toLowerCase().includes(q));}if(!list.length){$("feed").innerHTML='<div class="empty">'+(filter==="saved"?t("noSaved"):t("empty"))+'</div>';return;}$("feed").innerHTML="";list.forEach(v=>{const card=document.createElement("article");card.className="video-card";const player=document.createElement("video");player.src=v.url;player.playsInline=true;player.loop=true;player.autoplay=true;player.muted=!soundEnabled;player.setAttribute("autoplay","");player.preload="auto";let indicatorTimer;
 player.addEventListener("click",()=>{
  const wasPaused=player.paused;
  const indicator=card.querySelector(".pause-indicator");
@@ -298,7 +307,7 @@ player.addEventListener("click",()=>{
   clearTimeout(indicatorTimer);
  }
 });const shade=document.createElement("div");shade.className="shade";const info=document.createElement("div");info.className="vinfo";const author=document.createElement("div");author.className="author";author.textContent="@"+(localStorage.getItem("wavo_name")||t("name"));const cap=document.createElement("p");cap.className="caption";cap.textContent=store("descriptions",{})[v.name]||"🎬 WAVO";const sound=document.createElement("div");sound.className="sound";sound.textContent="♫ "+t("sound");info.append(author,cap,sound);const actions=document.createElement("div");actions.className="actions";const likes=store("likes",{}),saved=store("saved",[]),comments=store("comments",{});const add=(symbol,label,count,fn,cls="")=>{const w=document.createElement("div");w.className="aw";const b=document.createElement("button");b.className="act "+cls;b.textContent=symbol;b.title=label;b.onclick=fn;const c=document.createElement("span");c.className="count";c.textContent=count;w.append(b,c);actions.append(w);};const followBtn=document.createElement("button");followBtn.type="button";followBtn.className="follow-avatar-btn";followBtn.textContent=(localStorage.getItem("wavo_name")||"W").trim().slice(0,1).toUpperCase();followBtn.title="اكتشف وتابع المستخدمين";followBtn.setAttribute("aria-label","اكتشف وتابع المستخدمين");followBtn.onclick=()=>openFriends("discover");actions.append(followBtn);add(likes[v.name]?"♥":"♡",t("like"),likes[v.name]?"1":"",()=>{const x=store("likes",{});if(x[v.name])delete x[v.name];else x[v.name]=true;save("likes",x);render();},likes[v.name]?"on":"");add("💬",t("comment"),(comments[v.name]||[]).length,()=>openComments(v.name));add(saved.includes(v.name)?"★":"☆",t("save"),"",()=>{let a=store("saved",[]);a=a.includes(v.name)?a.filter(x=>x!==v.name):[...a,v.name];save("saved",a);render();},saved.includes(v.name)?"saved":"");add("↗",t("share"),"",async()=>{try{if(navigator.share)await navigator.share({title:"WAVO",url:v.url});else{await navigator.clipboard.writeText(v.url);alert("Link copied");}}catch{}});add("♫",t("sound"),"",()=>{soundEnabled=!soundEnabled;localStorage.setItem("wavo_sound_enabled",soundEnabled?"true":"false");document.querySelectorAll(".video-card video").forEach(x=>x.muted=!soundEnabled);if(player.paused)player.play().catch(()=>{});});const pauseIndicator=document.createElement("div");pauseIndicator.className="pause-indicator";pauseIndicator.textContent="Ⅱ";card.append(player,shade,pauseIndicator,info,actions);$("feed").append(card);});setupAuto();}
-let soundEnabled=localStorage.getItem("wavo_sound_enabled")==="true";let observer;function setupAuto(){if(observer)observer.disconnect();if(!("IntersectionObserver"in window)){document.querySelectorAll(".video-card video").forEach(v=>{v.muted=true;v.play().catch(()=>{});});return;}observer=new IntersectionObserver(es=>es.forEach(e=>{const v=e.target.querySelector("video");if(!v)return;if(e.isIntersecting&&e.intersectionRatio>.65){document.querySelectorAll(".video-card video").forEach(x=>{if(x!==v)x.pause()});v.muted=true;v.play().catch(err=>console.warn("WAVO autoplay:",err));}else v.pause();}),{threshold:[.2,.65,.9]});document.querySelectorAll(".video-card").forEach(c=>observer.observe(c));}
+let soundEnabled=localStorage.getItem("wavo_sound_enabled")!=="false";let observer;function setupAuto(){if(observer)observer.disconnect();if(!("IntersectionObserver"in window)){document.querySelectorAll(".video-card video").forEach(v=>{v.muted=!soundEnabled;v.play().catch(()=>{});});return;}observer=new IntersectionObserver(es=>es.forEach(e=>{const v=e.target.querySelector("video");if(!v)return;if(e.isIntersecting&&e.intersectionRatio>.65){document.querySelectorAll(".video-card video").forEach(x=>{if(x!==v)x.pause()});v.muted=!soundEnabled;v.play().catch(err=>console.warn("WAVO autoplay:",err));}else v.pause();}),{threshold:[.2,.65,.9]});document.querySelectorAll(".video-card").forEach(c=>observer.observe(c));}
 async function openComments(name){activeComment=name;const box=$("commentList");box.innerHTML='<p class="hint">جاري تحميل التعليقات...</p>';modal("commentsModal");if(!user){box.innerHTML='<p class="hint">سجّل الدخول أولاً لعرض التعليقات وإضافتها.</p>';return;}try{const {data,error}=await client.from("wavo_comments").select("id,user_id,display_name,body,created_at").eq("video_name",name).order("created_at",{ascending:true}).limit(200);if(error)throw error;box.innerHTML="";if(!data?.length){const p=document.createElement("p");p.className="hint";p.textContent=t("noComment");box.append(p);}else data.forEach(c=>{const d=document.createElement("div");d.className="comment";d.textContent=(c.display_name||"مستخدم WAVO")+": "+c.body;box.append(d);});}catch(e){box.innerHTML='<p class="hint">تعذر تحميل التعليقات: '+safeText(e.message||e)+'</p><p class="hint">تحقق من تنفيذ جدول wavo_comments وسياسات الصلاحيات في Supabase.</p>';}}
 $("sendComment").onclick=async()=>{const value=$("commentInput").value.trim();if(!value||!activeComment)return;if(!user){$("commentList").innerHTML='<p class="hint">سجّل الدخول أولاً لإضافة تعليق.</p>';return;}const b=$("sendComment");b.disabled=true;try{const display=localStorage.getItem("wavo_name")||user.user_metadata?.full_name||user.email?.split("@")[0]||"مستخدم WAVO";const {error}=await client.from("wavo_comments").insert({video_name:activeComment,user_id:user.id,display_name:display,body:value});if(error)throw error;$("commentInput").value="";await openComments(activeComment);}catch(e){const p=document.createElement("p");p.className="hint";p.textContent="تعذر إرسال التعليق: "+(e.message||e);$("commentList").append(p);}finally{b.disabled=false;}};
 
@@ -515,7 +524,102 @@ function setupNotificationsRealtime(){if(notificationsChannel){client.removeChan
 $("openActivity").onclick=openNotifications;$("notificationsReadAll").onclick=markAllNotificationsRead;
 
 function setNav(id){document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));$(id)?.classList.add("active");}
-$("homeNav").onclick=()=>{filter="all";query="";setNav("homeNav");render();$("feed").scrollTo(0,0)};$("liveOpen").onclick=()=>showInfo("liveText");
+$("homeNav").onclick=()=>{filter="all";query="";setNav("homeNav");render();$("feed").scrollTo(0,0)};
+let liveClient=null,liveLocalTracks=[],liveSessionId=null,liveRole=null,liveBusy=false;
+function liveMessage(message){$("liveStatus").textContent=message;}
+async function liveAuth(){
+ if(!client)throw new Error("تعذر الاتصال بخدمة الحسابات.");
+ const {data,error}=await client.auth.getUser();
+ if(error||!data?.user)throw new Error("يجب تسجيل الدخول إلى WAVO أولاً.");
+ user=data.user;return data.user;
+}
+async function liveToken(payload){
+ const {data,error}=await client.functions.invoke("wavo-agora-token",{body:payload});
+ if(error)throw new Error(data?.error||error.message||"تعذر الحصول على رمز البث.");
+ if(data?.error)throw new Error(data.error);
+ return data;
+}
+async function liveCleanup(){
+ try{if(liveClient)await liveClient.leave();}catch(e){console.warn("Agora leave:",e);}
+ liveLocalTracks.forEach(track=>{try{track.stop();track.close();}catch{}});
+ liveLocalTracks=[];liveClient=null;
+ $("liveLocalWrap").style.display="none";$("liveRemoteWrap").style.display="none";
+ $("liveEnd").style.display="none";$("liveStart").style.display="";
+}
+async function liveStart(){
+ if(liveBusy)return;liveBusy=true;$("liveStart").disabled=true;
+ try{
+  await liveAuth();
+  if(!window.AgoraRTC)throw new Error("تعذر تحميل مشغل Agora. تحقق من الإنترنت ثم أعد المحاولة.");
+  liveMessage("جاري إنشاء البث...");
+  const result=await liveToken({action:"start",title:$("liveTitle").value.trim()||"بث مباشر"});
+  liveSessionId=result.session.id;liveRole="host";
+  liveClient=AgoraRTC.createClient({mode:"live",codec:"vp8"});
+  await liveClient.setClientRole("host");
+  await liveClient.join(result.appId,result.channel,result.token,result.uid);
+  liveLocalTracks=await AgoraRTC.createMicrophoneAndCameraTracks();
+  await liveClient.publish(liveLocalTracks);
+  $("liveLocalWrap").style.display="block";$("liveEnd").style.display="";$("liveStart").style.display="none";
+  liveLocalTracks[1].play("liveLocalVideo");
+  liveMessage("أنت الآن على الهواء مباشرة. شارك عنوان البث مع متابعيك.");
+  await liveLoadList();
+ }catch(e){console.error("WAVO live start:",e);liveMessage(e.message||"تعذر بدء البث.");if(liveSessionId){try{await liveToken({action:"end",session_id:liveSessionId});}catch{}}await liveCleanup();liveSessionId=null;liveRole=null;}
+ finally{liveBusy=false;$("liveStart").disabled=false;}
+}
+async function liveEnd(){
+ if(!liveSessionId)return;
+ const id=liveSessionId;
+ try{liveMessage("جاري إنهاء البث...");await liveToken({action:"end",session_id:id});liveMessage("تم إنهاء البث.");}
+ catch(e){liveMessage(e.message||"تعذر إنهاء البث من الخادم.");}
+ await liveCleanup();liveSessionId=null;liveRole=null;await liveLoadList();
+}
+async function liveWatch(sessionId,title){
+ if(liveBusy)return;liveBusy=true;
+ try{
+  await liveAuth();
+  if(!window.AgoraRTC)throw new Error("تعذر تحميل مشغل Agora.");
+  liveMessage("جاري الاتصال بالبث...");
+  const result=await liveToken({action:"watch",session_id:sessionId});
+  liveSessionId=sessionId;liveRole="audience";
+  liveClient=AgoraRTC.createClient({mode:"live",codec:"vp8"});
+  liveClient.on("user-published",async(remoteUser,mediaType)=>{
+   await liveClient.subscribe(remoteUser,mediaType);
+   if(mediaType==="video"){ $("liveRemoteWrap").style.display="block";remoteUser.videoTrack.play("liveRemoteVideo");}
+   if(mediaType==="audio")remoteUser.audioTrack.play();
+  });
+  liveClient.on("user-unpublished",()=>{});
+  await liveClient.setClientRole("audience");
+  await liveClient.join(result.appId,result.channel,result.token,result.uid);
+  $("liveRemoteTitle").textContent=title||"مشاهدة البث";
+  $("liveRemoteWrap").style.display="block";$("liveLeave").style.display="";
+  liveMessage("متصل بالبث المباشر.");
+ }catch(e){console.error("WAVO live watch:",e);liveMessage(e.message||"تعذر الانضمام للبث.");await liveCleanup();liveSessionId=null;liveRole=null;}
+ finally{liveBusy=false;}
+}
+async function liveLeave(){
+ await liveCleanup();liveSessionId=null;liveRole=null;liveMessage("غادرت البث.");await liveLoadList();
+}
+async function liveLoadList(){
+ const box=$("liveList");box.innerHTML='<p class="hint">جاري تحميل البثوث...</p>';
+ try{
+  const {data,error}=await client.from("wavo_live_sessions").select("id,title,started_at,host_user_id").eq("status","live").order("started_at",{ascending:false}).limit(30);
+  if(error)throw error;
+  if(!data?.length){box.innerHTML='<p class="hint">لا توجد بثوث مباشرة حالياً.</p>';return;}
+  box.innerHTML="";
+  data.forEach(session=>{
+   const item=document.createElement("div");item.className="live-list-item";
+   const info=document.createElement("div");const title=document.createElement("strong");title.textContent=session.title||"بث مباشر";
+   const sub=document.createElement("p");sub.className="hint";sub.textContent="مباشر الآن";
+   info.append(title,sub);
+   const btn=document.createElement("button");btn.className="secondary";btn.textContent="مشاهدة";btn.onclick=()=>liveWatch(session.id,session.title);
+   item.append(info,btn);box.append(item);
+  });
+ }catch(e){box.innerHTML='<p class="hint">تعذر تحميل قائمة البثوث: '+String(e.message||"").replace(/[&<>"]/g,x=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[x]))+'</p>';}
+}
+$("liveOpen").onclick=()=>{const live=$("liveModal");if(!live){console.error("WAVO: liveModal is missing");return;}modal("liveModal",true);liveMessage("نافذة البث المباشر جاهزة. سجّل الدخول لبدء البث أو مشاهدة البثوث.");liveLoadList();};
+$("liveClose").onclick=async()=>{if(liveRole==="host")await liveEnd();else if(liveRole==="audience")await liveLeave();modal("liveModal",false);};
+$("liveStart").onclick=liveStart;$("liveEnd").onclick=liveEnd;$("liveRefresh").onclick=liveLoadList;$("liveLeave").onclick=liveLeave;
+
 $("refresh").onclick=load;$("forYou").onclick=()=>{filter="all";render();};$("popular").onclick=()=>{filter="all";render();};$("following").onclick=()=>openFriends("following");$("friendsNav").onclick=()=>{setNav("friendsNav");openFriends("discover");};$("inboxNav").onclick=openInbox;
 function showInfo(key){$("infoTitle").textContent=lang==="ar"?"قريباً":lang==="en"?"Coming soon":"Bientôt";$("infoText").textContent=t(key);modal("infoModal");}
 $("uploadNav").onclick=()=>{setNav("uploadNav");$("uploadStatus").textContent="";modal("uploadModal");};
