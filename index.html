@@ -350,7 +350,8 @@ $("publicProfileFollow").onclick=async()=>{
 };
 $("publicProfileMessage").onclick=()=>{if(!user){$("publicProfileBio").textContent="سجّل الدخول لإرسال رسالة خاصة.";return;}if(!viewedProfileId)return;$("publicProfileModal").classList.remove("show");openChat(viewedProfileId,$("publicProfileName").textContent);};
 $("publicProfileBack").onclick=()=>{$("publicProfileModal").classList.remove("show");modal(viewedProfilePreviousModal);};
-\nasync function openFriends(mode="discover"){
+
+async function openFriends(mode="discover"){
  peopleMode=mode;
  $("friendsTitle").textContent=mode==="following"?"الحسابات التي أتابعها":"الأصدقاء والمتابعة";
  $("friendsHint").textContent=mode==="following"?"هذه الحسابات التي تتابعها على WAVO.":"ابحث عن مستخدمي WAVO وتابع الحسابات التي تعجبك.";
