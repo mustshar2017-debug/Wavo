@@ -629,7 +629,7 @@ async function liveLoadList(){
   });
  }catch(e){box.innerHTML='<p class="hint">تعذر تحميل قائمة البثوث: '+String(e.message||"").replace(/[&<>"]/g,x=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[x]))+'</p>';}
 }
-$("liveOpen").onclick=()=>{const live=$("liveModal");if(!live){console.error("WAVO: liveModal is missing");return;}modal("liveModal",true);liveMessage("نافذة البث المباشر جاهزة. سجّل الدخول لبدء البث أو مشاهدة البثوث.");liveLoadList();};
+$("liveOpen").onclick=()=>{const live=$("liveModal");if(!live){console.error("WAVO: liveModal is missing");return;}modal("liveModal",true);liveMessage(client?.auth?.getSession?"جاهز للبث المباشر. يمكنك بدء بث جديد أو تحديث قائمة البثوث.":"جارٍ التحقق من اتصال الحساب...");liveLoadList();};
 $("liveClose").onclick=async()=>{if(liveRole==="host")await liveEnd();else if(liveRole==="audience")await liveLeave();modal("liveModal",false);};
 $("liveStart").onclick=liveStart;$("liveEnd").onclick=liveEnd;$("liveRefresh").onclick=liveLoadList;$("liveLeave").onclick=liveLeave;
 
