@@ -210,7 +210,35 @@ document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if
 function applyLang(){document.documentElement.lang=lang;document.documentElement.dir=lang==="ar"?"rtl":"ltr";document.querySelectorAll("[data-t]").forEach(e=>e.textContent=t(e.dataset.t));$("lang").textContent=lang==="ar"?"ع":lang.toUpperCase();document.title="WAVO – وافي العالمي";}
 function publicUrl(name){return client.storage.from(BUCKET).getPublicUrl(name).data.publicUrl}
 async function storageDiagnostic(){try{if(!client)return "Supabase JS غير محمّل؛ تحقق من اتصال CDN.";const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),9000);try{const r=await fetch(URL+"/storage/v1/object/list/"+BUCKET,{method:"POST",headers:{"apikey":KEY,"Authorization":"Bearer "+KEY,"Content-Type":"application/json"},body:JSON.stringify({prefix:"",limit:5,offset:0,sortBy:{column:"created_at",order:"desc"}}),signal:controller.signal});const body=await r.text();return "HTTP "+r.status+" — "+body.slice(0,450);}finally{clearTimeout(timer);}}catch(e){return e.name==="AbortError"?"انتهت مهلة الاتصال بـ Supabase (9 ثوانٍ).":"Network/CORS — "+(e.name||"Error")+": "+(e.message||String(e));}}
-async function load(){ $("feed").innerHTML='<div class="empty">'+t("loading")+'</div>';try{if(!client)throw new Error("مكتبة Supabase لم يتم تحميلها من CDN");const request=client.storage.from(BUCKET).list("",{limit:100,offset:0,sortBy:{column:"created_at",order:"desc"}});const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error("انتهت مهلة تحميل الفيديوهات بعد 12 ثانية. تحقق من اتصال الإنترنت وإعدادات Supabase.")),12000));const {data,error}=await Promise.race([request,timeout]);if(error)throw error;files=(data||[]).filter(f=>f.name&&!f.name.startsWith(".")&&/\.(mp4|webm|mov|m4v|ogg)$/i.test(f.name)).map(f=>({name:f.name,url:publicUrl(f.name)}));render();}catch(e){console.error("WAVO feed load:",e);const d=await storageDiagnostic();$("feed").innerHTML='<div class="empty">'+t("loadError")+'<br>'+String(e.message||"")+'<br><small style="direction:ltr;display:block;overflow-wrap:anywhere;margin-top:10px">'+d.replace(/[&<>"]/g,x=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[x]))+'</small><br><button type="button" id="retryFeed" class="secondary" style="margin-top:12px">إعادة تحميل الفيديوهات ↻</button></div>';const retry=$("retryFeed");if(retry)retry.onclick=load;}}
+async function collectVideos(prefix="",depth=0,result=[]){
+ const {data,error}=await client.storage.from(BUCKET).list(prefix,{limit:1000,offset:0,sortBy:{column:"created_at",order:"desc"}});
+ if(error)throw error;
+ for(const item of data||[]){
+  if(!item.name||item.name.startsWith("."))continue;
+  const path=prefix?prefix+"/"+item.name:item.name;
+  if(/\.(mp4|webm|mov|m4v|ogg)$/i.test(item.name)){
+   result.push({name:path,url:publicUrl(path),created_at:item.created_at||item.updated_at||""});
+  }else if((item.id===null||item.metadata===null)&&depth<4){
+   try{await collectVideos(path,depth+1,result);}catch(folderError){console.warn("WAVO folder skipped:",path,folderError);}
+  }
+ }
+ return result;
+}
+async function load(){
+ $("feed").innerHTML='<div class="empty">'+t("loading")+'</div>';
+ try{
+  if(!client)throw new Error("مكتبة Supabase لم يتم تحميلها من CDN");
+  const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error("انتهت مهلة تحميل الفيديوهات. تحقق من اتصال الإنترنت وصلاحية القراءة لحاوية videos.")),20000));
+  files=await Promise.race([collectVideos(),timeout]);
+  files.sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||""));
+  render();
+ }catch(e){
+  console.error("WAVO feed load:",e);
+  const d=await storageDiagnostic();
+  $("feed").innerHTML='<div class="empty">'+t("loadError")+'<br>'+String(e.message||"")+'<br><small style="direction:ltr;display:block;overflow-wrap:anywhere;margin-top:10px">'+d.replace(/[&<>"]/g,x=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[x]))+'</small><br><button type="button" id="retryFeed" class="secondary" style="margin-top:12px">إعادة تحميل الفيديوهات ↻</button></div>';
+  const retry=$("retryFeed");if(retry)retry.onclick=load;
+ }
+}
 function render(){let list=[...files];if(filter==="saved"){const s=store("saved",[]);list=list.filter(v=>s.includes(v.name));}if(query){const q=query.toLowerCase();list=list.filter(v=>v.name.toLowerCase().includes(q)||(store("descriptions",{})[v.name]||"").toLowerCase().includes(q));}if(!list.length){$("feed").innerHTML='<div class="empty">'+(filter==="saved"?t("noSaved"):t("empty"))+'</div>';return;}$("feed").innerHTML="";list.forEach(v=>{const card=document.createElement("article");card.className="video-card";const player=document.createElement("video");player.src=v.url;player.playsInline=true;player.loop=true;player.muted=!soundEnabled;player.preload="metadata";let indicatorTimer;
 player.addEventListener("click",()=>{
  const wasPaused=player.paused;
