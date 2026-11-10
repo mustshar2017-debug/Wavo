@@ -189,10 +189,29 @@ button,input,textarea,select{font-family:inherit;font-kerning:normal}
 
 <div class="modal" id="notificationsModal"><section class="sheet"><div class="sheethead"><h2>الإشعارات</h2><button class="close" data-close="notificationsModal">×</button></div><div class="sheethead"><p class="hint" style="margin:0">آخر التنبيهات على حسابك في WAVO</p><button id="notificationsReadAll" class="secondary">قراءة الكل</button></div><div id="notificationsList" class="notif-list"><p class="hint">جاري تحميل الإشعارات...</p></div><p id="notificationsStatus" class="status"></p></section></div>
 <div class="modal" id="infoModal"><section class="sheet"><div class="sheethead"><h2 id="infoTitle">WAVO</h2><button class="close" data-close="infoModal">×</button></div><p id="infoText" class="hint"></p></section></div>
+<script>
+(function(){
+ const feed=document.getElementById("feed");
+ let mainStarted=false;
+ window.__WAVO_MARK_MAIN_STARTED__=function(){mainStarted=true;};
+ window.addEventListener("error",function(e){
+  if(!mainStarted && feed){
+   const detail=(e.message||"خطأ في تحميل أو تحليل JavaScript")+(e.filename?" — "+e.filename:"")+(e.lineno?":"+e.lineno:"");
+   feed.innerHTML='<div class="empty">تعذر بدء كود WAVO.<br><small style="direction:ltr;display:block;overflow-wrap:anywhere;margin-top:12px">'+String(detail).replace(/[&<>"]/g,x=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[x]))+'</small><br><button class="secondary" onclick="location.reload()">إعادة المحاولة ↻</button></div>';
+  }
+ },true);
+ setTimeout(function(){
+  if(!mainStarted && feed && feed.textContent.includes("تهيئة مشغل الفيديوهات")){
+   feed.innerHTML='<div class="empty">كود WAVO الرئيسي لم يبدأ التشغيل.<br><small>قد يكون السبب خطأ JavaScript أو تعذر تحميل مكتبة خارجية. أرسل صورة هذه الرسالة.</small><br><button class="secondary" onclick="location.reload()">إعادة المحاولة ↻</button></div>';
+  }
+ },4000);
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.80.0"></script>
 <script>
 (()=>{
 "use strict";
+window.__WAVO_MARK_MAIN_STARTED__?.();
 const URL="https://jajaujilwhkroboyhenj.supabase.co",KEY="sb_publishable_9-FF377xk93I2f3XhWN-3w_UkxdOZLR",BUCKET="videos";
 const $=id=>document.getElementById(id), client=window.supabase?.createClient(URL,KEY);
 function showStartupError(message){
