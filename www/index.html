@@ -553,7 +553,11 @@ async function liveStart(){
   if(!window.AgoraRTC)throw new Error("تعذر تحميل مشغل Agora. تحقق من الإنترنت ثم أعد المحاولة.");
   liveMessage("جاري إنشاء البث...");
   const result=await liveToken({action:"start",title:$("liveTitle").value.trim()||"بث مباشر"});
-  liveSessionId=result.session.id;liveRole="host";
+  const liveSession=result?.session||result?.data?.session||null;
+  liveSessionId=liveSession?.id||result?.session_id||result?.id||null;
+  if(!liveSessionId)throw new Error(result?.error||"لم يرجع الخادم معرّف جلسة البث. تحقق من نشر وظيفة wavo-agora-token.");
+  if(!result?.appId||!result?.channel||!result?.token||!result?.uid)throw new Error("بيانات اتصال Agora غير مكتملة من الخادم. راجع إعدادات وظيفة البث.");
+  liveRole="host";
   liveClient=AgoraRTC.createClient({mode:"live",codec:"vp8"});
   await liveClient.setClientRole("host");
   await liveClient.join(result.appId,result.channel,result.token,result.uid);
