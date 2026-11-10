@@ -128,6 +128,7 @@ button,input,textarea,select{font-family:inherit;font-kerning:normal}
 .public-profile-grid video{width:100%;height:100%;object-fit:cover}
 .public-profile-grid .profile-empty{grid-column:1/-1;padding:45px 20px;text-align:center;color:#777;line-height:1.9}
 @media(min-width:700px){.public-profile-sheet{height:min(92dvh,900px);max-height:92dvh!important;border-radius:18px!important;margin:auto}.public-profile-modal{align-items:center!important}}
+.live-sheet{max-height:92dvh;overflow:auto}.live-actions{display:grid;gap:9px;margin:12px 0}.live-list{display:grid;gap:9px}.live-list-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#ffffff08}.live-list-item .hint{margin:4px 0 0}.live-list-title{margin:18px 0 8px;font-size:16px}.live-video{width:100%;min-height:220px;max-height:55vh;background:#000;border-radius:12px;overflow:hidden;margin:8px 0}.live-video video{width:100%;height:100%;object-fit:contain}.live-actions .field{width:100%}.live-list-item button{white-space:nowrap}
 </style></head>
 <body>
 
@@ -188,6 +189,13 @@ button,input,textarea,select{font-family:inherit;font-kerning:normal}
 <div class="chat-compose"><textarea id="chatInput" class="field" rows="1" maxlength="2000" placeholder="اكتب رسالة..."></textarea><button id="chatSend" aria-label="إرسال الرسالة">➤</button></div><p id="chatStatus" class="status"></p></section></div>
 
 <div class="modal" id="notificationsModal"><section class="sheet"><div class="sheethead"><h2>الإشعارات</h2><button class="close" data-close="notificationsModal">×</button></div><div class="sheethead"><p class="hint" style="margin:0">آخر التنبيهات على حسابك في WAVO</p><button id="notificationsReadAll" class="secondary">قراءة الكل</button></div><div id="notificationsList" class="notif-list"><p class="hint">جاري تحميل الإشعارات...</p></div><p id="notificationsStatus" class="status"></p></section></div>
+<div class="modal" id="liveModal"><section class="sheet live-sheet"><div class="sheethead"><h2>WAVO LIVE — البث المباشر</h2><button class="close" id="liveClose">×</button></div>
+<div id="liveStatus" class="status">سجّل الدخول لبدء البث أو مشاهدة البثوث المباشرة.</div>
+<div class="live-actions"><input id="liveTitle" class="field" maxlength="120" placeholder="عنوان البث المباشر"><button id="liveStart" class="primary">ابدأ البث الآن</button><button id="liveEnd" class="secondary" style="display:none">إنهاء البث</button><button id="liveRefresh" class="secondary">تحديث قائمة البثوث</button></div>
+<div id="liveLocalWrap" style="display:none"><p class="hint">أنت تبث الآن</p><div id="liveLocalVideo" class="live-video"></div></div>
+<h3 class="live-list-title">البثوث المتاحة الآن</h3><div id="liveList" class="live-list"><p class="hint">جاري تحميل البثوث...</p></div>
+<div id="liveRemoteWrap" style="display:none"><div class="sheethead"><strong id="liveRemoteTitle">مشاهدة البث</strong><button id="liveLeave" class="secondary">مغادرة</button></div><div id="liveRemoteVideo" class="live-video"></div></div>
+</section></div>
 <div class="modal" id="infoModal"><section class="sheet"><div class="sheethead"><h2 id="infoTitle">WAVO</h2><button class="close" data-close="infoModal">×</button></div><p id="infoText" class="hint"></p></section></div>
 <script>
 (function(){
@@ -208,6 +216,7 @@ button,input,textarea,select{font-family:inherit;font-kerning:normal}
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.80.0"></script>
+<script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.23.4.js"></script>
 <script>
 (()=>{
 "use strict";
@@ -515,7 +524,102 @@ function setupNotificationsRealtime(){if(notificationsChannel){client.removeChan
 $("openActivity").onclick=openNotifications;$("notificationsReadAll").onclick=markAllNotificationsRead;
 
 function setNav(id){document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));$(id)?.classList.add("active");}
-$("homeNav").onclick=()=>{filter="all";query="";setNav("homeNav");render();$("feed").scrollTo(0,0)};$("liveOpen").onclick=()=>showInfo("liveText");
+$("homeNav").onclick=()=>{filter="all";query="";setNav("homeNav");render();$("feed").scrollTo(0,0)};
+let liveClient=null,liveLocalTracks=[],liveSessionId=null,liveRole=null,liveBusy=false;
+function liveMessage(message){$("liveStatus").textContent=message;}
+async function liveAuth(){
+ if(!client)throw new Error("تعذر الاتصال بخدمة الحسابات.");
+ const {data,error}=await client.auth.getUser();
+ if(error||!data?.user)throw new Error("يجب تسجيل الدخول إلى WAVO أولاً.");
+ user=data.user;return data.user;
+}
+async function liveToken(payload){
+ const {data,error}=await client.functions.invoke("wavo-agora-token",{body:payload});
+ if(error)throw new Error(data?.error||error.message||"تعذر الحصول على رمز البث.");
+ if(data?.error)throw new Error(data.error);
+ return data;
+}
+async function liveCleanup(){
+ try{if(liveClient)await liveClient.leave();}catch(e){console.warn("Agora leave:",e);}
+ liveLocalTracks.forEach(track=>{try{track.stop();track.close();}catch{}});
+ liveLocalTracks=[];liveClient=null;
+ $("liveLocalWrap").style.display="none";$("liveRemoteWrap").style.display="none";
+ $("liveEnd").style.display="none";$("liveStart").style.display="";
+}
+async function liveStart(){
+ if(liveBusy)return;liveBusy=true;$("liveStart").disabled=true;
+ try{
+  await liveAuth();
+  if(!window.AgoraRTC)throw new Error("تعذر تحميل مشغل Agora. تحقق من الإنترنت ثم أعد المحاولة.");
+  liveMessage("جاري إنشاء البث...");
+  const result=await liveToken({action:"start",title:$("liveTitle").value.trim()||"بث مباشر"});
+  liveSessionId=result.session.id;liveRole="host";
+  liveClient=AgoraRTC.createClient({mode:"live",codec:"vp8"});
+  await liveClient.setClientRole("host");
+  await liveClient.join(result.appId,result.channel,result.token,result.uid);
+  liveLocalTracks=await AgoraRTC.createMicrophoneAndCameraTracks();
+  await liveClient.publish(liveLocalTracks);
+  $("liveLocalWrap").style.display="block";$("liveEnd").style.display="";$("liveStart").style.display="none";
+  liveLocalTracks[1].play("liveLocalVideo");
+  liveMessage("أنت الآن على الهواء مباشرة. شارك عنوان البث مع متابعيك.");
+  await liveLoadList();
+ }catch(e){console.error("WAVO live start:",e);liveMessage(e.message||"تعذر بدء البث.");if(liveSessionId){try{await liveToken({action:"end",session_id:liveSessionId});}catch{}}await liveCleanup();liveSessionId=null;liveRole=null;}
+ finally{liveBusy=false;$("liveStart").disabled=false;}
+}
+async function liveEnd(){
+ if(!liveSessionId)return;
+ const id=liveSessionId;
+ try{liveMessage("جاري إنهاء البث...");await liveToken({action:"end",session_id:id});liveMessage("تم إنهاء البث.");}
+ catch(e){liveMessage(e.message||"تعذر إنهاء البث من الخادم.");}
+ await liveCleanup();liveSessionId=null;liveRole=null;await liveLoadList();
+}
+async function liveWatch(sessionId,title){
+ if(liveBusy)return;liveBusy=true;
+ try{
+  await liveAuth();
+  if(!window.AgoraRTC)throw new Error("تعذر تحميل مشغل Agora.");
+  liveMessage("جاري الاتصال بالبث...");
+  const result=await liveToken({action:"watch",session_id:sessionId});
+  liveSessionId=sessionId;liveRole="audience";
+  liveClient=AgoraRTC.createClient({mode:"live",codec:"vp8"});
+  liveClient.on("user-published",async(remoteUser,mediaType)=>{
+   await liveClient.subscribe(remoteUser,mediaType);
+   if(mediaType==="video"){ $("liveRemoteWrap").style.display="block";remoteUser.videoTrack.play("liveRemoteVideo");}
+   if(mediaType==="audio")remoteUser.audioTrack.play();
+  });
+  liveClient.on("user-unpublished",()=>{});
+  await liveClient.setClientRole("audience");
+  await liveClient.join(result.appId,result.channel,result.token,result.uid);
+  $("liveRemoteTitle").textContent=title||"مشاهدة البث";
+  $("liveRemoteWrap").style.display="block";$("liveLeave").style.display="";
+  liveMessage("متصل بالبث المباشر.");
+ }catch(e){console.error("WAVO live watch:",e);liveMessage(e.message||"تعذر الانضمام للبث.");await liveCleanup();liveSessionId=null;liveRole=null;}
+ finally{liveBusy=false;}
+}
+async function liveLeave(){
+ await liveCleanup();liveSessionId=null;liveRole=null;liveMessage("غادرت البث.");await liveLoadList();
+}
+async function liveLoadList(){
+ const box=$("liveList");box.innerHTML='<p class="hint">جاري تحميل البثوث...</p>';
+ try{
+  const {data,error}=await client.from("wavo_live_sessions").select("id,title,started_at,host_user_id").eq("status","live").order("started_at",{ascending:false}).limit(30);
+  if(error)throw error;
+  if(!data?.length){box.innerHTML='<p class="hint">لا توجد بثوث مباشرة حالياً.</p>';return;}
+  box.innerHTML="";
+  data.forEach(session=>{
+   const item=document.createElement("div");item.className="live-list-item";
+   const info=document.createElement("div");const title=document.createElement("strong");title.textContent=session.title||"بث مباشر";
+   const sub=document.createElement("p");sub.className="hint";sub.textContent="مباشر الآن";
+   info.append(title,sub);
+   const btn=document.createElement("button");btn.className="secondary";btn.textContent="مشاهدة";btn.onclick=()=>liveWatch(session.id,session.title);
+   item.append(info,btn);box.append(item);
+  });
+ }catch(e){box.innerHTML='<p class="hint">تعذر تحميل قائمة البثوث: '+String(e.message||"").replace(/[&<>"]/g,x=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[x]))+'</p>';}
+}
+$("liveOpen").onclick=()=>{modal("liveModal");liveLoadList();};
+$("liveClose").onclick=async()=>{if(liveRole==="host")await liveEnd();else if(liveRole==="audience")await liveLeave();modal("liveModal",false);};
+$("liveStart").onclick=liveStart;$("liveEnd").onclick=liveEnd;$("liveRefresh").onclick=liveLoadList;$("liveLeave").onclick=liveLeave;
+
 $("refresh").onclick=load;$("forYou").onclick=()=>{filter="all";render();};$("popular").onclick=()=>{filter="all";render();};$("following").onclick=()=>openFriends("following");$("friendsNav").onclick=()=>{setNav("friendsNav");openFriends("discover");};$("inboxNav").onclick=openInbox;
 function showInfo(key){$("infoTitle").textContent=lang==="ar"?"قريباً":lang==="en"?"Coming soon":"Bientôt";$("infoText").textContent=t(key);modal("infoModal");}
 $("uploadNav").onclick=()=>{setNav("uploadNav");$("uploadStatus").textContent="";modal("uploadModal");};
