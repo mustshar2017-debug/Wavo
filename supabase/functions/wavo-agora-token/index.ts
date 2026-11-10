@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
       if (!isAdmin) {
         const { count, error } = await admin
           .from("wavo_follows")
-          .select("id", { count: "exact", head: true })
+          .select("follower_id", { count: "exact", head: true })
           .eq("following_id", user.id);
         if (error) return reply({ error: "Could not verify follower count" }, 500);
         if ((count ?? 0) < 500) {
