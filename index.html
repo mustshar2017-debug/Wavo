@@ -552,11 +552,20 @@ async function liveStart(){
   await liveAuth();
   if(!window.AgoraRTC)throw new Error("تعذر تحميل مشغل Agora. تحقق من الإنترنت ثم أعد المحاولة.");
   liveMessage("جاري إنشاء البث...");
-  const result=await liveToken({action:"start",title:$("liveTitle").value.trim()||"بث مباشر"});
+  const response=await liveToken({action:"start",title:$("liveTitle").value.trim()||"بث مباشر"});
+  const result=response?.data&&typeof response.data==="object"&&(response.data.session||response.data.appId||response.data.app_id)?response.data:response;
   const liveSession=result?.session||result?.data?.session||null;
-  liveSessionId=liveSession?.id||result?.session_id||result?.id||null;
-  if(!liveSessionId)throw new Error(result?.error||"لم يرجع الخادم معرّف جلسة البث. تحقق من نشر وظيفة wavo-agora-token.");
-  if(!result?.appId||!result?.channel||!result?.token||!result?.uid)throw new Error("بيانات اتصال Agora غير مكتملة من الخادم. راجع إعدادات وظيفة البث.");
+  liveSessionId=liveSession?.id||result?.session_id||result?.sessionId||result?.id||result?.live_session_id||null;
+  const appId=result?.appId||result?.app_id;
+  const channel=result?.channel||result?.channelName||result?.channel_name;
+  const token=result?.token||result?.rtcToken||result?.rtc_token;
+  const uid=result?.uid??result?.userId??result?.user_id;
+  if(!liveSessionId){
+   const keys=Object.keys(result||{}).filter(k=>!/token|secret|key|certificate/i.test(k));
+   throw new Error(result?.error||result?.message||"رد الخادم لا يحتوي على معرّف جلسة. الحقول المستلمة: "+(keys.join(", ")||"لا توجد حقول")+" — راجع كود وظيفة wavo-agora-token وسجلاتها.");
+  }
+  if(!appId||!channel||!token||uid===undefined||uid===null)throw new Error("تم إنشاء جلسة البث لكن بيانات Agora ناقصة. الحقول المتاحة: "+Object.keys(result||{}).filter(k=>!/token|secret|key|certificate/i.test(k)).join(", "));
+  result.appId=appId;result.channel=channel;result.token=token;result.uid=uid;
   liveRole="host";
   liveClient=AgoraRTC.createClient({mode:"live",codec:"vp8"});
   await liveClient.setClientRole("host");
