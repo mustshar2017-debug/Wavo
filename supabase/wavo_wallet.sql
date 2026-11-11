@@ -94,7 +94,8 @@ revoke insert, update, delete on public.wavo_wallet_requests from anon, authenti
 revoke insert, update, delete on public.wavo_wallet_transactions from anon, authenticated;
 grant select on public.wavo_wallet_accounts, public.wavo_wallet_requests, public.wavo_wallet_transactions to authenticated;
 
--- Make the transaction ledger append-only, including for ordinary SQL updates.
+-- Prevent edits to ledger entries. Client DELETE is separately revoked; keeping the trigger UPDATE-only
+-- allows normal auth-user cleanup cascades without blocking account deletion.
 create or replace function public.wavo_wallet_prevent_ledger_mutation()
 returns trigger
 language plpgsql
@@ -107,7 +108,7 @@ $$;
 
 drop trigger if exists wavo_wallet_transactions_immutable on public.wavo_wallet_transactions;
 create trigger wavo_wallet_transactions_immutable
-before update or delete on public.wavo_wallet_transactions
+before update on public.wavo_wallet_transactions
 for each row execute function public.wavo_wallet_prevent_ledger_mutation();
 
 -- Ensure an account row exists for each supported currency.
