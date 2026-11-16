@@ -256,7 +256,7 @@ async function collectVideos(prefix="",depth=0,result=[],visited=new Set()){
  const timer=setTimeout(()=>controller.abort(),12000);
  let response,body;
  try{
-  response=await fetch(URL+"/storage/v1/object/list/"+BUCKET,{
+  response=await fetch(SUPABASE_URL+"/storage/v1/object/list/"+BUCKET,{
    method:"POST",
    headers:{"apikey":KEY,"Authorization":"Bearer "+KEY,"Content-Type":"application/json"},
    body:JSON.stringify({prefix,limit:1000,offset:0,sortBy:{column:"created_at",order:"desc"}}),
