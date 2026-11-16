@@ -277,9 +277,11 @@ async function collectVideos(prefix="",depth=0,result=[],visited=new Set()){
    }
    continue;
   }
-  // Storage may return folder placeholders with metadata; recurse based on name,
-  // but only treat known video extensions as files.
-  try{await collectVideos(path,depth+1,result,visited);}catch(folderError){console.warn("WAVO: skipped non-video storage item",path,folderError);}
+  // Only recurse into actual folder placeholders. Listing a regular non-video
+  // object as if it were a folder can return HTTP 405 from Supabase Storage.
+  if(item.id===null){
+   try{await collectVideos(path,depth+1,result,visited);}catch(folderError){console.warn("WAVO: skipped storage folder",path,folderError);}
+  }
  }
  return result;
 }
