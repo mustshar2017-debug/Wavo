@@ -249,7 +249,9 @@ document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if
 function applyLang(){document.documentElement.lang=lang;document.documentElement.dir=lang==="ar"?"rtl":"ltr";document.querySelectorAll("[data-t]").forEach(e=>e.textContent=t(e.dataset.t));$("lang").textContent=lang==="ar"?"ع":lang.toUpperCase();document.title="WAVO – وافي العالمي";}
 function publicUrl(name){return client.storage.from(BUCKET).getPublicUrl(name).data.publicUrl}
 async function storageDiagnostic(){try{if(!client)return "Supabase JS غير محمّل؛ تحقق من اتصال CDN.";const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),9000);try{const r=await fetch(URL+"/storage/v1/object/list/"+BUCKET,{method:"POST",headers:{"apikey":KEY,"Authorization":"Bearer "+KEY,"Content-Type":"application/json"},body:JSON.stringify({prefix:"",limit:5,offset:0,sortBy:{column:"created_at",order:"desc"}}),signal:controller.signal});const body=await r.text();return "HTTP "+r.status+" — "+body.slice(0,450);}finally{clearTimeout(timer);}}catch(e){return e.name==="AbortError"?"انتهت مهلة الاتصال بـ Supabase (9 ثوانٍ).":"Network/CORS — "+(e.name||"Error")+": "+(e.message||String(e));}}
-async function collectVideos(prefix="",depth=0,result=[]){
+async function collectVideos(prefix="",depth=0,result=[],visited=new Set()){
+ if(visited.has(prefix)||depth>8)return result;
+ visited.add(prefix);
  const controller=new AbortController();
  const timer=setTimeout(()=>controller.abort(),12000);
  let response,body;
@@ -269,12 +271,15 @@ async function collectVideos(prefix="",depth=0,result=[]){
  for(const item of data||[]){
   if(!item.name||item.name.startsWith("."))continue;
   const path=prefix?prefix+"/"+item.name:item.name;
-  const isVideo=/\.(mp4|webm|mov|m4v|ogg)$/i.test(item.name);
-  if(isVideo){
-   result.push({name:path,url:publicUrl(path),created_at:item.created_at||item.updated_at||""});
-  }else if((item.id==null||item.metadata==null)&&depth<5){
-   await collectVideos(path,depth+1,result);
+  if(/\\.(mp4|webm|mov|m4v|ogg)$/i.test(item.name)){
+   if(!result.some(v=>v.name===path)){
+    result.push({name:path,url:publicUrl(path),created_at:item.created_at||item.updated_at||""});
+   }
+   continue;
   }
+  // Storage may return folder placeholders with metadata; recurse based on name,
+  // but only treat known video extensions as files.
+  await collectVideos(path,depth+1,result,visited);
  }
  return result;
 }
