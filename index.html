@@ -271,7 +271,7 @@ async function collectVideos(prefix="",depth=0,result=[],visited=new Set()){
  for(const item of data||[]){
   if(!item.name||item.name.startsWith("."))continue;
   const path=prefix?prefix+"/"+item.name:item.name;
-  if(/\\.(mp4|webm|mov|m4v|ogg)$/i.test(item.name)){
+  if(/\.(mp4|webm|mov|m4v|ogg)$/i.test(item.name)){
    if(!result.some(v=>v.name===path)){
     result.push({name:path,url:publicUrl(path),created_at:item.created_at||item.updated_at||""});
    }
