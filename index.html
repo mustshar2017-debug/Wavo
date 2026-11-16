@@ -723,14 +723,24 @@ function choose(f){if(!f)return;if(!f.type.startsWith("video/")){$("uploadStatus
 $("videoFile").onchange=e=>choose(e.target.files[0]);$("cameraFile").onchange=e=>choose(e.target.files[0]);
 $("previewBtn").onclick=()=>{if(!selected){$("uploadStatus").textContent=t("choose");return;}if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=URL.createObjectURL(selected);const v=document.createElement("video");v.src=previewUrl;v.controls=true;v.playsInline=true;v.style="width:100%;max-height:240px;border-radius:12px";$("preview").replaceChildren(v);};
 async function uploadVideoWithProgress(file,path){
- $("uploadStatus").textContent="جاري التحقق من جلسة الحساب...";
- const sessionResult=await Promise.race([
-  client.auth.getSession(),
-  new Promise((_,reject)=>setTimeout(()=>reject(new Error("تأخر تجهيز جلسة الحساب أكثر من 15 ثانية. أعد تحميل WAVO ثم حاول مرة أخرى.")),15000))
- ]);
- const {data:sessionData,error:sessionError}=sessionResult;
- if(sessionError)throw sessionError;
- const token=sessionData?.session?.access_token||KEY;
+ $("uploadStatus").textContent="جاري تجهيز صلاحية الرفع...";
+ // Use the locally cached Supabase session immediately, so a stalled auth lock
+ // cannot prevent the upload screen from sending the file.
+ let token=KEY;
+ try{
+  const cached=JSON.parse(localStorage.getItem("sb-jajaujilwhkroboyhenj-auth-token")||"null");
+  if(cached?.access_token)token=cached.access_token;
+ }catch(e){console.warn("WAVO: cached session unavailable",e);}
+ try{
+  const sessionResult=await Promise.race([
+   client.auth.getSession(),
+   new Promise((resolve)=>setTimeout(()=>resolve(null),4000))
+  ]);
+  if(sessionResult?.error)console.warn("WAVO: getSession fallback",sessionResult.error);
+  const freshToken=sessionResult?.data?.session?.access_token;
+  if(freshToken)token=freshToken;
+ }catch(e){console.warn("WAVO: continuing with cached upload token",e);}
+ if(!token)token=KEY;
  const encodedPath=path.split("/").map(encodeURIComponent).join("/");
  return await new Promise((resolve,reject)=>{
   const xhr=new XMLHttpRequest();
