@@ -380,7 +380,7 @@ async function openFriends(mode="discover"){
 }
 async function refreshPeople(){
  const box=$("peopleList");
- if(!user){box.innerHTML='<p class="hint">سجّل الدخول أولاً لاستخدام الأصدقاء والمتابعة.</p><button class="primary" id="friendsLogin">تسجيل الدخول</button>'; $("friendsLogin").onclick=()=>{$("friendsModal").classList.remove("show");openAuthFor("login");}; return;}
+ if(!user){box.innerHTML='<p class="hint">سجّل الدخول أولاً لاستخدام الأصدقاء والمتابعة.</p><button class="primary" id="friendsLogin">تسجيل الدخول</button>'; $("friendsLogin").onclick=()=>{$("friendsModal").classList.remove("show");$("profileNav").click();}; return;}
  box.innerHTML='<p class="hint">جاري تحميل المستخدمين...</p>';
  try{
   const [{count:followingCount,error:e1},{count:followersCount,error:e2},followRes]=await Promise.all([
