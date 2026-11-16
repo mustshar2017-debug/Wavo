@@ -279,7 +279,7 @@ async function collectVideos(prefix="",depth=0,result=[],visited=new Set()){
   }
   // Storage may return folder placeholders with metadata; recurse based on name,
   // but only treat known video extensions as files.
-  await collectVideos(path,depth+1,result,visited);
+  try{await collectVideos(path,depth+1,result,visited);}catch(folderError){console.warn("WAVO: skipped non-video storage item",path,folderError);}
  }
  return result;
 }
